@@ -6,67 +6,166 @@
 <title>Vets4Warriors Staffing Forecast</title>
 <style>
   :root {
-    --navy: #0f1f3d;
-    --navy-2: #182c52;
-    --ink: #1b1f2a;
-    --muted: #5b6474;
-    --line: #dfe3ea;
-    --bg: #f5f6f8;
-    --card: #ffffff;
-    --teal: #0f8a7a;
+    --navy: #0b1730;
+    --navy-2: #13234a;
+    --navy-3: #1b2f5e;
+    --navy-line: rgba(255, 255, 255, 0.10);
+    --on-navy: #e8edf6;
+    --on-navy-2: #9fb0cc;
+    --canvas: #fafbfc;
+    --canvas-2: #eceff5;
+    --hairline: #e4e8ef;
+    --hairline-strong: #c3cad6;
+    --ink: #141a26;
+    --body: #4a5468;
+    --mute: #7c8698;
+    --teal: #0e8a7a;
     --teal-bg: #e3f4f1;
+    --amber: #9a6400;
+    --amber-bg: #fbf1dc;
     --red: #b3261e;
     --red-bg: #fbe9e7;
+    --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+    --t-fast: 150ms;
+    --t-base: 200ms;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; font: 14px/1.45 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: var(--ink); background: var(--bg); }
-  header { background: var(--navy); color: #fff; padding: 18px 24px; display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
-  header h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: .2px; }
-  header .sub { color: #b9c3d6; font-size: 13px; }
-  main { max-width: 1100px; margin: 0 auto; padding: 20px 24px 48px; }
-  .banner { background: var(--navy-2); color: #dfe6f3; border-left: 4px solid #6f8fc7; padding: 12px 16px; border-radius: 6px; margin-bottom: 18px; font-size: 13px; }
-  .banner strong { color: #fff; }
-  .banner.error { background: var(--red-bg); color: var(--red); border-left-color: var(--red); }
-  .banner.notice { background: #fff4d6; color: #6b4e00; border-left-color: #d99a00; }
-  .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 16px; margin-bottom: 18px; }
-  .control label { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 6px; }
-  .control input[type=date] { width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; font: inherit; }
-  .control input[type=range] { width: 100%; }
-  .control .val { font-size: 18px; font-weight: 600; text-transform: none; color: var(--ink); }
-  .grid { display: grid; grid-template-columns: 1fr; gap: 18px; }
-  @media (min-width: 900px) { .grid { grid-template-columns: 3fr 2fr; } }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
-  .card h2 { margin: 0 0 12px; font-size: 15px; font-weight: 600; }
-  table { width: 100%; border-collapse: collapse; }
-  th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: center; vertical-align: top; }
-  th { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; font-weight: 600; }
-  td.date { text-align: left; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  td.date small { display: block; color: var(--muted); }
-  .cell { display: inline-block; min-width: 64px; padding: 6px 8px; border-radius: 6px; background: var(--teal-bg); color: var(--teal); }
+  html { background: var(--navy); }
+  body {
+    margin: 0;
+    font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-variant-numeric: tabular-nums;
+    color: var(--on-navy);
+    background: var(--navy);
+    -webkit-font-smoothing: antialiased;
+  }
+  [hidden] { display: none !important; }
+  :focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  .roster :focus-visible { outline-color: var(--ink); }
+
+  /* ---- chrome (navy) ---- */
+  .wrap { max-width: 1360px; margin: 0 auto; padding: 0 32px; }
+  header { border-bottom: 1px solid var(--navy-line); }
+  header .wrap { display: flex; align-items: baseline; gap: 14px; padding-top: 22px; padding-bottom: 18px; flex-wrap: wrap; }
+  header .mark { font-size: 15px; font-weight: 600; color: var(--on-navy-2); letter-spacing: -0.01em; }
+  header h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.02em; color: #fff; }
+  header .sub { color: var(--on-navy-2); font-size: 14px; margin-left: auto; }
+
+  /* Banners get their text set by JS (innerHTML/textContent), so the gutter lives on the banner itself. */
+  .banner { font-size: 13.5px; line-height: 1.5; color: var(--on-navy-2); padding: 12px max(32px, calc((100% - 1296px) / 2)); border-bottom: 1px solid var(--navy-line); }
+  .banner strong { color: var(--on-navy); font-weight: 600; }
+  .banner.error { color: var(--on-navy); box-shadow: inset 4px 0 0 var(--on-navy); }
+  .banner.notice { color: var(--on-navy); background: var(--navy-2); box-shadow: inset 4px 0 0 var(--amber); }
+
+  .controls { display: grid; grid-template-columns: 170px 170px 1fr 1fr; gap: 12px 40px; align-items: end; padding: 22px 0 24px; border-bottom: 1px solid var(--navy-line); }
+  .control label { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; font-size: 13px; font-weight: 500; color: var(--on-navy-2); margin-bottom: 8px; }
+  .control .val { font-size: 22px; font-weight: 600; line-height: 1; color: #fff; letter-spacing: -0.02em; min-width: 3.2ch; text-align: right; }
+  .control input[type=date] {
+    width: 100%; height: 36px; padding: 0 10px; border: 1px solid var(--navy-line); border-radius: 6px;
+    font: inherit; font-size: 14px; color: var(--on-navy); background: var(--navy-2); color-scheme: dark;
+  }
+  .control input[type=range] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 36px; margin: 0; background: transparent; cursor: pointer;
+  }
+  .control input[type=range]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: var(--navy-3); }
+  .control input[type=range]::-moz-range-track { height: 4px; border-radius: 2px; background: var(--navy-3); }
+  .control input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 20px; height: 20px; margin-top: -8px; border-radius: 50%;
+    background: #fff; border: 3px solid var(--teal); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    transition: transform var(--t-fast) var(--ease);
+  }
+  .control input[type=range]::-moz-range-thumb {
+    width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 3px solid var(--teal);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  }
+  .control input[type=range]:active::-webkit-slider-thumb { transform: scale(1.12); }
+
+  /* ---- content grid ---- */
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 40px; padding: 28px 0 64px; align-items: start; }
+  .grid h2 { margin: 0 0 14px; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+
+  /* ---- roster sheet: the one light surface ---- */
+  .roster { background: var(--canvas); color: var(--ink); border-radius: 10px; padding: 8px 24px 16px; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 12px 32px -12px rgba(0, 0, 0, 0.6); }
+  .roster h2 { color: var(--ink); padding: 14px 0 10px; margin: 0; display: flex; align-items: baseline; gap: 12px; }
+  .roster h2 .cap { font-weight: 400; font-size: 13px; color: var(--mute); }
+  .roster .fade { transition: opacity var(--t-fast) var(--ease); }
+  .is-loading .fade { opacity: 0.55; transition-delay: 100ms; }
+
+  table { width: 100%; border-collapse: separate; border-spacing: 0; }
+  thead th {
+    position: sticky; top: 0; z-index: 1; background: var(--canvas);
+    padding: 12px 8px 10px; text-align: center; font-size: 13px; font-weight: 500; color: var(--body);
+    border-bottom: 1px solid var(--hairline-strong);
+  }
+  thead th small { display: block; font-size: 12px; color: var(--mute); font-weight: 400; }
+  thead th.date { text-align: left; padding-left: 12px; }
+  td { padding: 10px 8px; border-bottom: 1px solid var(--hairline); text-align: center; vertical-align: middle; height: 66px; }
+  tr.weekend td { background: var(--canvas-2); }
+  tr.week-start td { border-top: 2px solid var(--hairline-strong); }
+  td.date { text-align: left; white-space: nowrap; padding-left: 12px; width: 190px; }
+  td.date .dow { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+  td.date .dm { font-size: 16px; color: var(--body); margin-left: 4px; }
+  td.date small { display: block; color: var(--mute); font-size: 12px; margin-top: 2px; }
+  td.date .today { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 4px; font-size: 11px; font-weight: 600; color: var(--canvas); background: var(--ink); vertical-align: 2px; letter-spacing: 0.01em; }
+  td.err { text-align: left; color: var(--ink); font-weight: 500; padding: 18px 12px; }
+
+  .cell { display: inline-block; min-width: 84px; padding: 5px 12px 6px; border-radius: 7px; color: var(--ink); }
+  .cell .n { font-size: 28px; font-weight: 700; line-height: 1.05; letter-spacing: -0.02em; }
+  .cell .calls { font-size: 12px; color: var(--mute); margin-top: 1px; }
+  .cell .warn { font-size: 11px; font-weight: 700; margin-left: 6px; text-transform: none; }
+  /* peak = highest staff_needed that day; only peak, tight, or capped cells get a tinted block. */
+  .cell.peak { background: var(--teal-bg); color: var(--teal); }
+  .cell.peak .calls { color: var(--teal); opacity: 0.8; }
+  .cell.tight { background: var(--amber-bg); color: var(--amber); }
+  .cell.tight .calls { color: var(--amber); opacity: 0.85; }
   .cell.capped { background: var(--red-bg); color: var(--red); }
-  .cell .n { font-size: 18px; font-weight: 700; line-height: 1.1; }
-  .cell .calls { font-size: 11px; opacity: .85; }
-  .cell .warn { font-size: 10px; font-weight: 700; letter-spacing: .3px; }
-  .legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); margin-top: 10px; flex-wrap: wrap; }
-  .legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 4px; }
-  svg { width: 100%; height: auto; display: block; }
-  .bar { fill: var(--navy-2); }
-  .bar:hover { fill: #6f8fc7; }
-  .axis { stroke: var(--line); stroke-width: 1; }
-  .tick { font-size: 10px; fill: var(--muted); }
-  .status { font-size: 12px; color: var(--muted); margin-top: 8px; min-height: 16px; }
+  .cell.capped .calls { color: var(--red); opacity: 0.85; }
+
+  .legend { display: flex; gap: 20px; font-size: 12.5px; color: var(--body); padding: 14px 4px 0; flex-wrap: wrap; }
+  .legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; }
+
+  /* ---- chart (sits directly on navy, no card) ---- */
+  .aside { padding-top: 14px; }
+  .aside h2 { color: #fff; }
+  .chart { position: relative; min-height: 236px; }
+  .plot { position: relative; height: 210px; margin-left: 34px; }
+  .ticks { position: absolute; inset: 0; pointer-events: none; }
+  .tick { position: absolute; left: 0; right: 0; border-top: 1px solid var(--navy-line); }
+  .tick:nth-child(1) { top: 0; }
+  .tick:nth-child(2) { top: 50%; }
+  .tick:nth-child(3) { top: 100%; border-top-color: rgba(255, 255, 255, 0.28); }
+  .tick em { position: absolute; right: calc(100% + 8px); top: -7px; font-style: normal; font-size: 11px; color: var(--on-navy-2); }
+  .bars { position: absolute; inset: 0; display: flex; align-items: flex-end; gap: 2px; }
+  .bar { flex: 1 1 0; min-width: 0; height: 0%; background: #5a7ab8; border-radius: 2px 2px 0 0; transition: height var(--t-base) var(--ease); }
+  .bar.weekend { background: #3f5a90; }
+  .bar:hover { background: #8fa8d8; }
+  .xlabels { position: relative; height: 18px; margin-left: 34px; margin-top: 6px; }
+  .xlabels span { position: absolute; top: 0; transform: translateX(-50%); font-size: 11px; color: var(--on-navy-2); white-space: nowrap; }
+  .status { font-size: 12.5px; color: var(--on-navy-2); margin-top: 14px; min-height: 18px; }
+  .note { font-size: 12.5px; color: var(--on-navy-2); margin-top: 28px; line-height: 1.55; max-width: 34em; }
+
+  @media (max-width: 1100px) {
+    .controls { grid-template-columns: 1fr 1fr; }
+    .grid { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+  }
 </style>
 </head>
 <body>
 <header>
-  <h1>Vets4Warriors · Staffing Forecast</h1>
-  <span class="sub">Inbound calls · Erlang C · 3 shifts · client cap 7 per shift</span>
+  <div class="wrap">
+    <span class="mark">Vets4Warriors</span>
+    <h1>Staffing forecast</h1>
+    <span class="sub">People to schedule on each shift, from a daily call forecast and Erlang C. At most 7 per shift.</span>
+  </div>
 </header>
 
-<main>
-  <div id="banner" class="banner">Loading model info…</div>
-  <div id="holidayBanner" class="banner notice" hidden></div>
+<div id="banner" class="banner">Loading model info…</div>
+<div id="holidayBanner" class="banner notice" hidden></div>
 
+<main class="wrap">
   <section class="controls">
     <div class="control">
       <label for="start">Start date</label>
@@ -77,51 +176,84 @@
       <input type="date" id="end">
     </div>
     <div class="control">
-      <label for="eff">Staff efficiency <span class="val" id="effVal"></span></label>
+      <label for="eff"><span>Staff efficiency</span><span class="val" id="effVal"></span></label>
       <input type="range" id="eff" min="50" max="85" step="1" value="65">
     </div>
     <div class="control">
-      <label for="sl">Service level target <span class="val" id="slVal"></span> in 30 s</label>
+      <label for="sl"><span>Service level, answered within 30 s</span><span class="val" id="slVal"></span></label>
       <input type="range" id="sl" min="80" max="95" step="1" value="80">
     </div>
   </section>
 
-  <div class="grid">
-    <div class="card">
-      <h2>Staff to schedule per shift</h2>
-      <div style="overflow-x:auto">
+  <div class="grid" id="content">
+    <section class="roster">
+      <h2>Staff to schedule per shift <span class="cap">big figure is people, small is forecast calls in that shift</span></h2>
+      <div class="fade">
         <table>
           <thead>
-            <tr><th style="text-align:left">Date</th><th>Day<br><small>08:00–16:30</small></th><th>Evening<br><small>16:00–00:30</small></th><th>Overnight<br><small>00:00–08:30</small></th></tr>
+            <tr><th class="date">Date</th><th>Day<small>08:00 to 16:30</small></th><th>Evening<small>16:00 to 00:30</small></th><th>Overnight<small>00:00 to 08:30</small></th></tr>
           </thead>
           <tbody id="rows"></tbody>
         </table>
       </div>
       <div class="legend">
-        <span><span class="sw" style="background:var(--teal-bg);border:1px solid var(--teal)"></span>within cap</span>
-        <span><span class="sw" style="background:var(--red-bg);border:1px solid var(--red)"></span>over cap (needs &gt; 7)</span>
-        <span>Big number = people to schedule. Small = predicted calls in that shift.</span>
+        <span><span class="sw" style="background:var(--teal-bg);border:1px solid var(--teal)"></span>busiest shift that day, within cap</span>
+        <span><span class="sw" style="background:var(--amber-bg);border:1px solid var(--amber)"></span>at the cap of 7</span>
+        <span><span class="sw" style="background:var(--red-bg);border:1px solid var(--red)"></span>over cap, needs more than 7</span>
       </div>
-    </div>
-    <div class="card">
+    </section>
+    <aside class="aside">
       <h2>Predicted calls per day</h2>
-      <div id="chart"></div>
+      <div id="chart" class="chart fade"></div>
       <div class="status" id="status"></div>
-    </div>
+      <p class="note">Shaded rows are weekends. A heavier rule marks the start of each week. Treat any single shift number as plus or minus one person.</p>
+    </aside>
   </div>
 </main>
 
 <script>
 (function () {
   const SHIFTS = ["Day", "Evening", "Overnight"];
-  const DEBOUNCE_MS = 250;
+  const DEBOUNCE_MS = 120;
   const DEFAULT_HORIZON_DAYS = 30;
   const MAX_STAFF_PER_SHIFT = 7;
+  const TWEEN_MS = 200;
+  const REDUCED_MOTION = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
 
   const $ = (id) => document.getElementById(id);
   const startEl = $("start"), endEl = $("end"), effEl = $("eff"), slEl = $("sl");
   const rowsEl = $("rows"), chartEl = $("chart"), statusEl = $("status"), bannerEl = $("banner");
   const holidayBannerEl = $("holidayBanner");
+  const contentEl = $("content");
+
+  // ---- presentation helpers (no effect on what is fetched or computed) ----
+  function prefersReducedMotion() { return !!(REDUCED_MOTION && REDUCED_MOTION.matches); }
+  function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+  function formatFixed(decimals) { return (v) => Number(v).toFixed(decimals); }
+  // Tween the displayed text of `el` from `from` to `to` over TWEEN_MS. Final text is always exact.
+  function tweenText(el, from, to, fmt) {
+    if (prefersReducedMotion() || !Number.isFinite(from) || from === to) { el.textContent = fmt(to); return; }
+    const t0 = performance.now();
+    el.textContent = fmt(from);
+    function step(now) {
+      const p = Math.min(1, (now - t0) / TWEEN_MS);
+      el.textContent = fmt(from + (to - from) * easeOutCubic(p));
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  // Snapshot every tweenable figure currently on screen, keyed by data-tw, before the DOM is replaced.
+  function snapshotFigures(root) {
+    const prev = new Map();
+    root.querySelectorAll("[data-tw]").forEach((el) => prev.set(el.dataset.tw, parseFloat(el.dataset.v)));
+    return prev;
+  }
+  function tweenFigures(root, prev) {
+    root.querySelectorAll("[data-tw]").forEach((el) => {
+      tweenText(el, prev.get(el.dataset.tw), parseFloat(el.dataset.v), formatFixed(Number(el.dataset.d || 0)));
+    });
+  }
+  function isWeekend(dt) { const d = dt.getDay(); return d === 0 || d === 6; }
 
   // Local calendar date, not UTC: toISOString() would roll evening users to tomorrow.
   function isoDate(d) {
@@ -161,66 +293,91 @@
     return res.json();
   }
 
-  function shiftCell(s) {
+  // Cell state (presentation only, compares existing fields to the constant 7):
+  //   capped: API says capped, or staff_needed > 7       -> red (the only use of red)
+  //   tight:  not capped and staff_needed === 7           -> amber, at the cap exactly
+  //   peak:   highest staff_needed of the day's shifts    -> teal block so it is findable at a glance
+  function shiftCell(s, key, isPeak) {
     if (!s) return `<td>—</td>`;
     const capped = s.capped || s.staff_needed > MAX_STAFF_PER_SHIFT;
-    return `<td><span class="cell${capped ? " capped" : ""}">
-      <div class="n">${s.staff_needed}</div>
-      <div class="calls">${s.predicted_calls.toFixed(1)} calls</div>
-      ${capped ? `<div class="warn">OVER CAP</div>` : ""}
+    const tight = !capped && s.staff_needed === MAX_STAFF_PER_SHIFT;
+    const state = capped ? " capped" : tight ? " tight" : isPeak ? " peak" : "";
+    return `<td><span class="cell${state}">
+      <div class="n" data-tw="${key}:n" data-v="${s.staff_needed}" data-d="0">${s.staff_needed}</div>
+      <div class="calls"><span data-tw="${key}:c" data-v="${s.predicted_calls}" data-d="1">${s.predicted_calls.toFixed(1)}</span> calls${capped ? `<b class="warn">over cap</b>` : tight ? `<b class="warn">at cap</b>` : ""}</div>
     </span></td>`;
   }
 
   function renderTable(days) {
-    rowsEl.innerHTML = days.map((d) => {
+    const prev = snapshotFigures(rowsEl);
+    const today = isoDate(new Date());
+    rowsEl.innerHTML = days.map((d, i) => {
       const dt = new Date(d.date + "T00:00:00");
       const dow = dt.toLocaleDateString(undefined, { weekday: "short" });
-      return `<tr>
-        <td class="date">${d.date}<small>${dow} · ${d.predicted_calls.toFixed(0)} calls</small></td>
-        ${SHIFTS.map((name) => shiftCell(d.shifts[name])).join("")}
+      const dayMonth = dt.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+      // Peak = the day's highest staff_needed. If every shift ties there is no busiest shift, so none is marked.
+      const needs = SHIFTS.map((name) => d.shifts[name] ? d.shifts[name].staff_needed : -Infinity);
+      const peak = Math.max(...needs) > Math.min(...needs) ? Math.max(...needs) : NaN;
+      const rowClass = [isWeekend(dt) ? "weekend" : "", dt.getDay() === 1 && i > 0 ? "week-start" : ""].join(" ").trim();
+      return `<tr class="${rowClass}">
+        <td class="date" title="${d.date}"><span class="dow">${dow}</span><span class="dm">${dayMonth}</span>${d.date === today ? `<span class="today">Today</span>` : ""}
+          <small><span data-tw="${d.date}:total" data-v="${d.predicted_calls}" data-d="0">${d.predicted_calls.toFixed(0)}</span> calls forecast</small></td>
+        ${SHIFTS.map((name) => shiftCell(d.shifts[name], `${d.date}:${name}`, !!d.shifts[name] && d.shifts[name].staff_needed === peak)).join("")}
       </tr>`;
     }).join("");
+    tweenFigures(rowsEl, prev);
   }
 
+  // Bars are plain divs whose height transitions in CSS. Existing bars are reused when the day
+  // count is unchanged so the transition actually fires; otherwise the plot is rebuilt.
+  const TICK_FRACTIONS = [1, 0.5, 0];
   function renderChart(days) {
-    const W = 440, H = 220, padL = 34, padB = 28, padT = 10, padR = 6;
-    const innerW = W - padL - padR, innerH = H - padT - padB;
     const max = Math.max(1, ...days.map((d) => d.predicted_calls));
     const yMax = Math.ceil(max / 10) * 10;
-    const bw = innerW / days.length;
-    const bars = days.map((d, i) => {
-      const h = (d.predicted_calls / yMax) * innerH;
-      const x = padL + i * bw + bw * 0.15;
-      const y = padT + innerH - h;
-      return `<rect class="bar" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(bw * 0.7).toFixed(1)}" height="${h.toFixed(1)}"><title>${d.date}: ${d.predicted_calls.toFixed(1)} calls</title></rect>`;
-    }).join("");
-    const ticks = [0, 0.5, 1].map((f) => {
-      const y = padT + innerH - f * innerH;
-      return `<line class="axis" x1="${padL}" x2="${W - padR}" y1="${y}" y2="${y}"/><text class="tick" x="${padL - 4}" y="${y + 3}" text-anchor="end">${Math.round(f * yMax)}</text>`;
-    }).join("");
+    let bars = chartEl.querySelectorAll(".bar");
+    const rebuild = bars.length !== days.length;
+    if (rebuild) {
+      chartEl.innerHTML =
+        `<div class="plot" role="img" aria-label="Predicted calls per day">` +
+        `<div class="ticks">${TICK_FRACTIONS.map(() => `<span class="tick"><em></em></span>`).join("")}</div>` +
+        `<div class="bars">${days.map(() => `<div class="bar"></div>`).join("")}</div>` +
+        `</div><div class="xlabels"></div>`;
+      bars = chartEl.querySelectorAll(".bar");
+    }
+    chartEl.querySelectorAll(".tick em").forEach((el, i) => { el.textContent = Math.round(TICK_FRACTIONS[i] * yMax); });
+    const applyBars = () => days.forEach((d, i) => {
+      const bar = bars[i];
+      bar.style.height = ((d.predicted_calls / yMax) * 100).toFixed(1) + "%";
+      bar.title = `${d.date}: ${d.predicted_calls.toFixed(1)} calls`;
+      bar.classList.toggle("weekend", isWeekend(new Date(d.date + "T00:00:00")));
+    });
+    // Freshly built bars start at 0 height; defer one frame so the first paint can grow them.
+    if (rebuild && !prefersReducedMotion()) requestAnimationFrame(() => requestAnimationFrame(applyBars)); else applyBars();
     const labelEvery = Math.max(1, Math.ceil(days.length / 6));
-    const xLabels = days.map((d, i) => i % labelEvery === 0
-      ? `<text class="tick" x="${(padL + i * bw + bw / 2).toFixed(1)}" y="${H - 8}" text-anchor="middle">${d.date.slice(5)}</text>`
+    chartEl.querySelector(".xlabels").innerHTML = days.map((d, i) => i % labelEvery === 0
+      ? `<span style="left:${(((i + 0.5) / days.length) * 100).toFixed(2)}%">${d.date.slice(5)}</span>`
       : "").join("");
-    chartEl.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Predicted calls per day">${ticks}${bars}${xLabels}</svg>`;
   }
 
   let inflight = 0;
   async function refresh() {
     const id = ++inflight;
-    statusEl.textContent = "Fetching…";
+    statusEl.textContent = "Updating…";
+    contentEl.classList.add("is-loading"); // dims in place; rows are never removed while waiting
     try {
       const data = await fetchJson("/api/staffing?" + params());
       if (id !== inflight) return; // a newer request superseded this one
+      contentEl.classList.remove("is-loading");
       renderTable(data.days);
       renderChart(data.days);
       renderHolidayBanner(data.holiday_coverage);
       const total = data.days.reduce((a, d) => a + d.predicted_calls, 0);
-      statusEl.textContent = `${data.days.length} days · ${total.toFixed(0)} predicted calls · efficiency ${data.params.efficiency} · target ${data.params.target_pct}`;
+      statusEl.textContent = `${data.days.length} days, ${total.toFixed(0)} predicted calls. Efficiency ${data.params.efficiency}, target ${data.params.target_pct}.`;
     } catch (err) {
       if (id !== inflight) return;
+      contentEl.classList.remove("is-loading");
       statusEl.textContent = "";
-      rowsEl.innerHTML = `<tr><td colspan="4" style="color:var(--red);text-align:left">${err.message}</td></tr>`;
+      rowsEl.innerHTML = `<tr><td colspan="4" class="err">${err.message}</td></tr>`;
       chartEl.innerHTML = "";
     }
   }
@@ -239,11 +396,11 @@
       const lgbm = byModel.lgbm_poisson, naive = byModel.seasonal_naive;
       if (!lgbm) throw new Error("metadata has no backtest.overall");
       bannerEl.innerHTML =
-        `<strong>Model error, not magic.</strong> LightGBM (Poisson) backtested on ${m.backtest.first_test_month.slice(0, 7)} → ${m.backtest.last_test_month.slice(0, 7)}, ` +
+        `<strong>Model error, not magic.</strong> LightGBM (Poisson) backtested on ${m.backtest.first_test_month.slice(0, 7)} to ${m.backtest.last_test_month.slice(0, 7)}, ` +
         `predicting each month with no access to it. Daily-total MAE <strong>${lgbm.daily_mae.toFixed(1)} calls/day</strong>` +
         (naive ? ` vs ${naive.daily_mae.toFixed(1)} for seasonal naive` : "") +
         `; hourly MAE ${lgbm.mae.toFixed(2)} calls/hour. ` +
-        `Trained on ${m.train_start.slice(0, 10)} → ${m.train_end.slice(0, 10)}. Treat any single shift number as ±1 person.`;
+        `Trained on ${m.train_start.slice(0, 10)} to ${m.train_end.slice(0, 10)}. Treat any single shift number as plus or minus one person.`;
       bannerEl.classList.remove("error");
     } catch (err) {
       bannerEl.textContent = "Model metadata unavailable: " + err.message;

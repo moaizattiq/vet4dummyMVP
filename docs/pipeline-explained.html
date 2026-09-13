@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>How a call log becomes a staffing number</title>
+<style>
+  /* ---------- print setup ---------- */
+  @page {
+    size: Letter;
+    margin: 0.95in 0.9in 0.95in 0.9in;
+    @bottom-left { content: "Vets4Warriors staffing forecast, student MVP on seeded demo data. Generated 2026-09-13."; font: 8.5pt "Helvetica Neue", Helvetica, Arial, sans-serif; color: #6b7280; }
+    @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 8.5pt "Helvetica Neue", Helvetica, Arial, sans-serif; color: #6b7280; }
+  }
+  @page :first { @bottom-left { content: none; } @bottom-right { content: none; } }
+  .summary { font-size: 10pt; line-height: 1.45; }
+  .summary p, .summary li { margin-bottom: 6pt; }
+
+  :root {
+    --navy: #0f1f3d;
+    --navy-2: #1b2f5e;
+    --ink: #1a1f2b;
+    --body: #333a48;
+    --mute: #6b7280;
+    --rule: #cfd5df;
+    --teal: #0e7c6e;
+    --teal-bg: #e6f4f1;
+    --amber: #8a5a00;
+    --amber-bg: #fbf2dc;
+    --red: #b3261e;
+    --red-bg: #fbe9e7;
+    --code-bg: #f3f5f8;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #fff; }
+  body { font: 10.5pt/1.5 "Helvetica Neue", Helvetica, Arial, sans-serif; color: var(--body); }
+  h1, h2, h3, h4 { color: var(--navy); font-weight: 600; line-height: 1.2; break-after: avoid; page-break-after: avoid; }
+  h1 { font-size: 26pt; margin: 0 0 8pt; letter-spacing: -0.01em; }
+  h2 { font-size: 17pt; margin: 0 0 10pt; padding-bottom: 6pt; border-bottom: 2px solid var(--navy); break-before: page; page-break-before: always; }
+  h2.no-break { break-before: auto; page-break-before: auto; }
+  h3 { font-size: 12.5pt; margin: 16pt 0 6pt; }
+  h4 { font-size: 10.5pt; margin: 12pt 0 4pt; color: var(--navy-2); }
+  p { margin: 0 0 8pt; }
+  ul, ol { margin: 0 0 8pt 18pt; padding: 0; }
+  li { margin-bottom: 3pt; }
+  strong { color: var(--ink); }
+  code { font: 9.5pt "Menlo", "Courier New", monospace; background: var(--code-bg); padding: 0 3px; border-radius: 2px; color: var(--ink); }
+  pre { font: 9.5pt/1.45 "Menlo", "Courier New", monospace; background: var(--code-bg); border-left: 3px solid var(--navy); padding: 8pt 10pt; margin: 6pt 0 10pt; white-space: pre; break-inside: avoid; page-break-inside: avoid; color: var(--ink); }
+  .cap { color: var(--mute); font-size: 9pt; margin: -4pt 0 10pt; }
+
+  table { border-collapse: collapse; width: 100%; margin: 6pt 0 12pt; font-size: 9.5pt; break-inside: avoid; page-break-inside: avoid; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+  th, td { padding: 4pt 7pt; border-bottom: 1px solid var(--rule); text-align: left; vertical-align: top; }
+  th { color: var(--navy); font-weight: 600; border-bottom: 1.5px solid var(--navy); }
+  td.n, th.n { text-align: right; }
+  tr.hl td { background: var(--teal-bg); font-weight: 600; color: var(--ink); }
+  table.compact td, table.compact th { padding: 2.5pt 6pt; }
+
+  .box { border-left: 4px solid; padding: 8pt 12pt; margin: 10pt 0 12pt; break-inside: avoid; page-break-inside: avoid; }
+  .box p:last-child { margin-bottom: 0; }
+  .key { border-color: var(--teal); background: var(--teal-bg); }
+  .key .t, .tradeoff .t, .warn .t { font-weight: 600; margin-bottom: 3pt; }
+  .key .t { color: var(--teal); }
+  .tradeoff { border-color: var(--amber); background: var(--amber-bg); }
+  .tradeoff .t { color: var(--amber); }
+  .warn { border-color: var(--red); background: var(--red-bg); }
+  .warn .t { color: var(--red); }
+
+  .cover { padding-top: 1.6in; break-after: page; page-break-after: always; }
+  .cover .kicker { color: var(--teal); font-weight: 600; font-size: 11pt; margin-bottom: 14pt; }
+  .cover .meta { color: var(--mute); font-size: 10pt; margin-top: 18pt; border-top: 1px solid var(--rule); padding-top: 10pt; }
+  .toc { break-before: page; page-break-before: always; }
+  .toc h2 { break-before: auto; page-break-before: auto; }
+  .toc ol { list-style: none; margin: 0; padding: 0; }
+  .toc li { display: flex; justify-content: space-between; border-bottom: 1px dotted var(--rule); padding: 4pt 0; font-size: 10.5pt; }
+  .toc li { display: block; }
+  .toc li span { display: block; }
+  .toc a { color: inherit; text-decoration: none; display: block; }
+  .toc a::after { content: target-counter(attr(href), page); color: var(--mute); font-variant-numeric: tabular-nums; float: right; padding-left: 12pt; }
+  .keep { break-inside: avoid; page-break-inside: avoid; }
+
+  figure { margin: 8pt 0 12pt; break-inside: avoid; page-break-inside: avoid; }
+  figcaption { color: var(--mute); font-size: 9pt; margin-top: 4pt; }
+  svg text { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  .sym td:first-child { font-family: "Menlo", "Courier New", monospace; font-size: 9.5pt; white-space: nowrap; color: var(--ink); }
+  .gloss dt { font-weight: 600; color: var(--navy); margin-top: 6pt; }
+  .gloss dd { margin: 0 0 2pt 0; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ COVER + SUMMARY -->
+<section class="cover">
+  <div class="kicker">Vets4Warriors staffing forecast</div>
+  <h1>How a call log becomes a staffing number</h1>
+  <p style="font-size:12pt;color:var(--body);margin-bottom:14pt;">A plain-language walk through the whole pipeline: the data, the forecast model, the queueing math, the screen, and what is still unproven.</p>
+  <div class="meta">
+    Student MVP built for the UTDesign EPICS project with Vets4Warriors. All figures in this document come from the repository files and the project database as of 2026-09-13. The database holds <strong>seeded synthetic data</strong>, not the client's real call log. Every accuracy number here describes performance on that seed data only.
+  </div>
+</section>
+
+<section class="summary">
+  <h2 class="no-break" id="s1">1. One-page summary</h2>
+
+  <p><strong>What it does.</strong> The tool reads a table of past inbound calls to the Vets4Warriors peer-support line, learns the shape of demand by hour of day, day of week, month, holiday, and long-term trend, and predicts how many calls will arrive in each future hour. It then converts each hour's predicted calls into the number of people who must be on the phones to answer 80% of callers within 30 seconds, adjusts for the fact that a scheduled person is only free for calls part of the time, and rolls the hours up into three shifts: Day (08:00 to 16:30), Evening (16:00 to 00:30), and Overnight (00:00 to 08:30). The output is a table: for each date and each shift, how many people to schedule.</p>
+
+  <p><strong>Who uses it.</strong> Supervisors and managers building a monthly schedule. Two sliders let them change the assumptions live: how much of a shift a person is actually available for inbound calls (50% to 85%), and how fast calls should be answered (80% to 95% within 30 seconds).</p>
+
+  <p><strong>How good it is, on the seed data.</strong> The forecast was tested by pretending it was the first day of each month from January 2024 through December 2025, training only on earlier data, and predicting the whole month ahead. Across those 24 months the predicted daily total was off by 9.28 calls on a typical day, against an average of 51.15 calls per day. A simple rule of thumb (same weekday and hour, median of the last 8 weeks) was off by 10.34. In staffing terms: read any shift number as plus or minus one person.</p>
+
+  <p><strong>What it is not.</strong></p>
+  <ul>
+    <li>It has never seen the client's real data. The 93,407 calls in the database were generated by a script to look plausible. The accuracy numbers above say the pipeline works; they say nothing about how well it will work on real calls.</li>
+    <li>It does not build a roster. It says how many people, not which people.</li>
+    <li>It only covers inbound calls. Outbound follow-up work is not forecast and is not subtracted from capacity.</li>
+    <li>It assumes callers never hang up while waiting. They do (8.06% of seed calls were abandoned). The math that handles that, Erlang A, is a known next step.</li>
+    <li>It flags but does not solve the client's cap of 7 people per shift. If the math says 8, the screen shows 8 in red.</li>
+  </ul>
+
+  <div class="box key"><div class="t">The one idea to keep</div><p>Every staffing number is a chain of four steps: predicted calls per hour, times minutes per call, gives busy-person-hours (the load); Erlang C turns the load into people needed on the phones; dividing by the efficiency slider turns that into people to schedule; and each shift takes the largest hourly answer inside it. Change any link and the number moves in a way you can trace by hand. Section 6 does exactly that.</p></div>
+</section>
+
+<!-- ============================================================ TOC -->
+<section class="toc">
+  <h2 id="toc">Contents</h2>
+  <ol>
+    <li><span><a href="#s1">1. One-page summary</a></span></li>
+    <li><span><a href="#s2">2. The pipeline in one picture</a></span></li>
+    <li><span><a href="#s3">3. The data</a></span></li>
+    <li><span><a href="#s4">4. Every design decision, with its trade-off</a></span></li>
+    <li><span><a href="#s5">5. How the model was trained</a></span></li>
+    <li><span><a href="#s6">6. From predicted calls to a staffing number</a></span></li>
+    <li><span><a href="#s7">7. What each control on the screen actually does</a></span></li>
+    <li><span><a href="#s8">8. Known limitations and what's next</a></span></li>
+    <li><span><a href="#s9">9. Glossary</a></span></li>
+  </ol>
+</section>
+
+<!-- ============================================================ 2. PIPELINE -->
+<section>
+  <h2 id="s2">2. The pipeline in one picture</h2>
+  <figure>
+    <svg viewBox="0 0 620 700" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pipeline from raw call rows to the screen">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0f1f3d"/></marker>
+      </defs>
+      <g font-size="12" fill="#1a1f2b">
+        <g><rect x="170" y="10" width="280" height="38" rx="4" fill="#fff" stroke="#0f1f3d" stroke-width="1.5"/><text x="310" y="34" text-anchor="middle" font-weight="600">Raw call rows (table calls)</text><text x="160" y="34" text-anchor="end" font-size="10" fill="#6b7280">93,407 rows</text></g>
+        <line x1="310" y1="48" x2="310" y2="66" stroke="#0f1f3d" stroke-width="1.5" marker-end="url(#arr)"/>
+        <g><rect x="170" y="68" width="280" height="38" rx="4" fill="#fff" stroke="#0f1f3d" stroke-width="1.5"/><text x="310" y="92" text-anchor="middle" font-weight="600">Hourly grid, zeros filled in</text><text x="160" y="92" text-anchor="end" font-size="10" fill="#6b7280">43,824 hours</text></g>
+        <line x1="310" y1="106" x2="310" y2="124" stroke="#0f1f3d" stroke-width="1.5" marker-end="url(#arr)"/>
+        <g><rect x="170" y="126" width="280" height="38" rx="4" fill="#fff" stroke="#0f1f3d" stroke-width="1.5"/><text x="310" y="150" text-anchor="middle" font-weight="600">Calendar and holiday features</text><text x="160" y="150" text-anchor="end" font-size="10" fill="#6b7280">14 columns</text></g>
+        <line x1="310" y1="164" x2="310" y2="182" stroke="#0f1f3d" stroke-width="1.5" marker-end="url(#arr)"/>
+        <g><rect x="170" y="184" width="280" height="38" rx="4" fill="#e6f4f1" stroke="#0e7c6e" stroke-width="1.5"/><text x="310" y="208" text-anchor="middle" font-weight="600">LightGBM model (Poisson objective)</text><text x="460" y="208" text-anchor="start" font-size="10" fill="#6b7280">500 trees</text></g>
+        <line x1="310" y1="222" x2="310" y2="240" stroke="#0f1f3d" stroke-width="1.5" marker-end="url(#arr)"/>
+        <g><rect x="170" y="242" width="280" height="38" rx="4" fill="#fff" stroke="#0f1f3d" stroke-width="1.5"/><text x="310" y="266" text-anchor="middle" font-weight="600">Predicted calls per hour</text></g>
+        <line x1="310" y1="280" x2="310" y2="298" stroke="#0f1f3d" stroke-width="1.5" marker-end="url(#arr)"/>
+        <g><rect x="170" y="300" width="280" height="38" rx="4" fill="#fff" stroke="#0f1f3d" stroke-width="1.5"/><text x="310" y="324" text-anchor="middle" font-weight="600">Handle-time estimate (AHT) joined in</text><text x="460" y="324" text-anchor="start" font-size="10" fill="#6b7280">168 cells</text></g>
+        <line x1="310" y1="338" x2="310" y2="356" stroke="#0f1f3d" stroke-width="1.5" marker-end="url(#arr)"/>
+        <g><rect x="170" y="358" width="280" height="38" rx="4" fill="#e6f4f1" stroke="#0e7c6e" stroke-width="1.5"/><text x="310" y="382" text-anchor="middle" font-weight="600">Erlang C: load to people on phones</text></g>
+        <line x1="310" y1="396" x2="310" y2="414" stroke="#0f1f3d" stroke-width="1.5" marker-end="url(#arr)"/>
+        <g><rect x="170" y="416" width="280" height="38" rx="4" fill="#fff" stroke="#0f1f3d" stroke-width="1.5"/><text x="310" y="440" text-anchor="middle" font-weight="600">Agents required per hour</text></g>
+        <line x1="310" y1="454" x2="310" y2="472" stroke="#0f1f3d" stroke-width="1.5" marker-end="url(#arr)"/>
+        <g><rect x="170" y="474" width="280" height="38" rx="4" fill="#fff" stroke="#0f1f3d" stroke-width="1.5"/><text x="310" y="498" text-anchor="middle" font-weight="600">Divide by efficiency slider</text><text x="460" y="498" text-anchor="start" font-size="10" fill="#6b7280">default 0.65</text></g>
+        <line x1="310" y1="512" x2="310" y2="530" stroke="#0f1f3d" stroke-width="1.5" marker-end="url(#arr)"/>
+        <g><rect x="170" y="532" width="280" height="38" rx="4" fill="#fff" stroke="#0f1f3d" stroke-width="1.5"/><text x="310" y="556" text-anchor="middle" font-weight="600">Staff to schedule per hour</text></g>
+        <line x1="310" y1="570" x2="310" y2="588" stroke="#0f1f3d" stroke-width="1.5" marker-end="url(#arr)"/>
+        <g><rect x="170" y="590" width="280" height="38" rx="4" fill="#fff" stroke="#0f1f3d" stroke-width="1.5"/><text x="310" y="614" text-anchor="middle" font-weight="600">Shift roll-up: max hour in each shift</text><text x="460" y="614" text-anchor="start" font-size="10" fill="#6b7280">cap 7 flagged</text></g>
+        <line x1="310" y1="628" x2="310" y2="646" stroke="#0f1f3d" stroke-width="1.5" marker-end="url(#arr)"/>
+        <g><rect x="170" y="648" width="280" height="38" rx="4" fill="#0f1f3d" stroke="#0f1f3d" stroke-width="1.5"/><text x="310" y="672" text-anchor="middle" font-weight="600" fill="#fff">Screen: date by shift table</text></g>
+      </g>
+    </svg>
+    <figcaption>Teal boxes are the two places where math does real work: the forecast model and the queueing formula. Everything else is bookkeeping.</figcaption>
+  </figure>
+
+  <h3>What changes at each arrow</h3>
+  <p><strong>Raw rows to hourly grid.</strong> Each call is one row with a timestamp. The database view <code>calls_hourly</code> counts the rows in each clock hour. That view only has a row for hours with at least one call (35,872 of them), so the training script adds the missing 7,952 hours with a count of zero. Now there is one row for every hour from 2021-01-01 00:00 to 2025-12-31 23:00.</p>
+  <p><strong>Hourly grid to features.</strong> For each hour the code writes down things you can know in advance: weekday, hour, month, week of year, how many days since the data began, whether it is a weekend, whether it is a holiday, how many days to the nearest holiday, and two holiday strength numbers. Nothing about how many calls arrived is used as a feature.</p>
+  <p><strong>Features to LightGBM.</strong> LightGBM is a program that builds hundreds of small decision trees, each one correcting the errors of the previous ones. It is trained to predict the call count from the features. The "Poisson objective" tells it the target is a count of events, which changes how it scores its own mistakes (Section 4.4).</p>
+  <p><strong>LightGBM to predicted calls.</strong> For any future hour, build the same features and ask the model. It answers with an expected number of calls, a decimal like 5.05, not a whole number, because it is an average over many possible outcomes.</p>
+  <p><strong>Predicted calls plus AHT.</strong> Each hour of the week gets a typical call length in seconds, computed from past answered calls with recent calls counting more. This is looked up by (weekday, hour).</p>
+  <p><strong>Erlang C.</strong> Predicted calls times seconds per call gives how many person-hours of talking will happen in that hour. Erlang C answers: with N people on the phones, what share of callers is answered within 30 seconds? The code raises N until the answer clears the target.</p>
+  <p><strong>Agents to staff.</strong> A scheduled person is not free for inbound calls all shift (breaks, lunch, follow-up calls, paperwork). The efficiency slider says what share they are free. Divide agents by that share and round up.</p>
+  <p><strong>Staff per hour to shifts.</strong> A shift takes the largest hourly staff number inside its window. If the requirement is above 7 the row is marked, never trimmed.</p>
+</section>
+
+<!-- ============================================================ 3. DATA -->
+<section>
+  <h2 id="s3">3. The data</h2>
+  <p>The only data source is one Postgres database, reached through the environment variable <code>V4W_DATABASE_URL</code>. It has two tables and one view, defined in <code>db/schema.sql</code>. The rows in it were produced by a generator script and loaded once. The generator was written to mimic what the client described in meetings: a night-heavy line, Mondays busiest, holidays busier, calls getting longer at night, and volume growing year over year. It is scaffolding so the pipeline could be built and tested before real data arrives.</p>
+
+  <table class="compact">
+    <tr><th>Object</th><th class="n">Rows</th><th>Range</th></tr>
+    <tr><td><code>calls</code></td><td class="n">93,407</td><td>2021-01-01 00:54:55 to 2025-12-31 23:55:58</td></tr>
+    <tr><td><code>holidays</code></td><td class="n">91</td><td>2021-01-01 to 2027-12-31 (13 dates per year; 2026 and 2027 were added on 2026-09-13)</td></tr>
+    <tr><td><code>calls_hourly</code> (view)</td><td class="n">35,872</td><td>only hours that had at least one call</td></tr>
+  </table>
+
+  <div class="keep">
+  <p>What the seed data looks like, measured directly:</p>
+  <table class="compact">
+    <tr><th>Measure</th><th class="n">Value</th></tr>
+    <tr><td>Answered calls</td><td class="n">85,879</td></tr>
+    <tr><td>Abandoned calls</td><td class="n">7,528 (8.06%)</td></tr>
+    <tr><td>Answered within 30 seconds, as a share of answered</td><td class="n">84.13%</td></tr>
+    <tr><td>Talk time on answered calls: mean / median / maximum</td><td class="n">703 s / 571 s / 7,200 s</td></tr>
+    <tr><td>Mean queue time on answered calls</td><td class="n">27.3 s</td></tr>
+    <tr><td>Median wait before abandoning</td><td class="n">69 s</td></tr>
+    <tr><td>Calls per day, averaged over all days</td><td class="n">51.15</td></tr>
+    <tr><td>Calls per year 2021 / 2022 / 2023 / 2024 / 2025</td><td class="n">16,035 / 16,454 / 18,383 / 20,937 / 21,598</td></tr>
+    <tr><td>Busiest hour of day (average calls in that hour)</td><td class="n">21:00, 3.55</td></tr>
+    <tr><td>Quietest hour of day</td><td class="n">05:00, 1.43</td></tr>
+    <tr><td>Most calls ever in one hour</td><td class="n">18</td></tr>
+  </table>
+  </div>
+
+  <div class="keep">
+  <h3>3.1 The <code>calls</code> table, column by column</h3>
+  <p>Six columns came from the client's description of their export. Three more are computed by the database itself.</p>
+  <table>
+    <tr><th>Column</th><th>What it is</th><th>Used where</th></tr>
+    <tr><td><code>call_start</code></td><td>When the call arrived, local time, to the second.</td><td>Bucketed to the hour in the view; the hour and weekday drive every feature.</td></tr>
+    <tr><td><code>inqueue_sec</code></td><td>Seconds from arrival until an agent answered, including ringing. The client's service-level clock.</td><td>Only to compute <code>answered_30s</code>. Not used by the model or the staffing math.</td></tr>
+    <tr><td><code>routing_sec</code></td><td>The ringing part of the wait, at the end. Zero for abandoned calls.</td><td><strong>Not used.</strong></td></tr>
+    <tr><td><code>agent_sec</code></td><td>Seconds an agent spent talking. Zero for abandoned calls.</td><td>The handle-time estimate (AHT). Also summed into <code>talk_sec</code> in the view.</td></tr>
+    <tr><td><code>abandoned</code></td><td>True if the caller hung up before an agent answered.</td><td>Filters answered calls for AHT. Counted in the view.</td></tr>
+    <tr><td><code>abandon_sec</code></td><td>How long an abandoning caller waited before giving up. Zero for answered calls.</td><td><strong>Not used.</strong> This is the column an Erlang A upgrade would need (Section 4.8).</td></tr>
+    <tr><td><code>call_hour</code> (computed)</td><td>Hour of <code>call_start</code>, 0 to 23.</td><td>AHT lookup key.</td></tr>
+    <tr><td><code>dow</code> (computed)</td><td>Weekday, 1 = Monday to 7 = Sunday.</td><td>AHT lookup key.</td></tr>
+    <tr><td><code>answered_30s</code> (computed)</td><td>True if answered and <code>inqueue_sec</code> is 30 or less. The service-level rule, defined once in the schema so nobody rewrites it slightly differently.</td><td>Counted in the view. Not used downstream yet.</td></tr>
+  </table>
+  </div>
+  <p>The database also enforces the client's own rules: an abandoned call has zero talk time, zero routing time, and its abandon time equals its queue time; an answered call has zero abandon time and routing time no larger than queue time. Rows that break these rules cannot be inserted. There is no call ID in the export, so the six client columns together act as the row's identity, which makes re-loading the same file a no-op.</p>
+
+
+  <h3>3.2 The <code>holidays</code> table</h3>
+  <table>
+    <tr><th>Column</th><th>What it is</th><th>Used where</th></tr>
+    <tr><td><code>holiday_date</code></td><td>The date. Primary key.</td><td>Sets <code>is_holiday</code> and <code>days_to_nearest_holiday</code> for every hour.</td></tr>
+    <tr><td><code>holiday_name</code></td><td>Label, for example "Veterans Day".</td><td>Display only.</td></tr>
+    <tr><td><code>volume_multiplier</code></td><td>How much busier the whole day is expected to be, for example 1.550 for Independence Day.</td><td>Feature <code>holiday_volume_multiplier</code> (0 on non-holidays).</td></tr>
+    <tr><td><code>evening_multiplier</code></td><td>An extra evening lift, for example 1.850 for Independence Day.</td><td>Feature <code>holiday_evening_multiplier</code>. Applied to all 24 hours, not just evenings; see Section 8.</td></tr>
+  </table>
+  <p>The 13 dates each year are: New Year's Day, Valentine's Day, Memorial Day, Juneteenth, Independence Day, July 5 (spillover), Labor Day, September 11, Veterans Day, Thanksgiving, Christmas Eve, Christmas Day, New Year's Eve. The multipliers are the same every year. They came with the seed data; where they came from is not recorded.</p>
+
+  <h3>3.3 The <code>calls_hourly</code> view</h3>
+  <p>A view is a saved query that looks like a table but is recomputed from <code>calls</code> every time it is read, so it can never be stale. This one groups calls by clock hour and returns, per hour: <code>hour_start</code>, <code>dow</code>, <code>call_hour</code>, <code>offered</code> (calls that arrived), <code>answered</code>, <code>abandoned</code>, <code>answered_30s</code>, <code>talk_sec</code> (total talk seconds), and <code>offered_load_erlangs</code> (talk seconds divided by 3,600). The model uses only <code>hour_start</code> and <code>offered</code>. The other columns exist for the dashboard's history views, which are not built yet.</p>
+
+  <div class="box key"><div class="t">Why hours and not individual calls</div><p>A schedule is written in hours, not in calls. Nobody staffs for "the 14:07 call". Counting calls per hour turns 93,407 unpredictable events into 43,824 numbers with a clear daily and weekly rhythm, which is what a forecast model can learn. It also throws away the exact minute of each call, which is fine, because Erlang C only needs the rate.</p></div>
+</section>
+
+<!-- ============================================================ 4. DECISIONS -->
+<section>
+  <h2 id="s4">4. Every design decision, with its trade-off</h2>
+
+  <h3>4.1 Hourly buckets instead of per-call modeling</h3>
+  <p><strong>Chose:</strong> predict the count of calls in each hour. <strong>Alternatives:</strong> predict each call's arrival time; use 15- or 30-minute buckets. <strong>Why:</strong> supervisors schedule by shift, the client's service level is defined per call but managed per hour, and hourly counts on this line are already small (mean 2.13 per hour). Finer buckets would be mostly zeros and ones, which no model can forecast well.</p>
+  <div class="box tradeoff"><div class="t">What it costs</div><p>Anything shorter than an hour is invisible. A surge that lasts 20 minutes is smeared across the hour and staffing for it is under-called. The 30-minute shift overlaps (08:00 to 08:30 and so on) cannot be modeled exactly, so the boundary hour is counted toward both shifts for the staffing peak.</p></div>
+
+  <h3>4.2 Filling the full hourly grid with zeros</h3>
+  <p><strong>Chose:</strong> every hour in the range gets a row; hours with no calls get 0. <strong>Alternative:</strong> train only on the 35,872 hours that had calls, as the view returns them. <strong>Why:</strong> two problems with the alternative.</p>
+  <p><em>Leakage.</em> The backtest rule is "predict a whole month with no access to that month's data". If the test rows are only the hours that turned out to have calls, then the choice of which hours to predict already uses knowledge of the test month. The predicted daily total would then skip the quiet hours, which is cheating without meaning to.</p>
+  <p><em>Overnight blindness.</em> A model that never sees a zero will not predict values near zero. Overnight hours are where zeros live (18.1% of all hours are zero, almost all at night). Without them the model would overstate night demand, and staffing would be wrong exactly where the client said calls are rarest and longest.</p>
+  <div class="box tradeoff"><div class="t">What it costs</div><p>An absent hour is treated as "zero calls". If the real export ever has gaps for a different reason (a system outage, a missing day in the file), those gaps become false zeros and pull the forecast down. The ingest step will need an explicit check for missing days before this rule is safe on real data.</p></div>
+
+  <h3>4.3 LightGBM instead of a seasonal average, and instead of deep learning</h3>
+  <p><strong>Chose:</strong> LightGBM, a gradient-boosted tree model. <strong>Alternatives:</strong> a recency-weighted average per weekday and hour (what the client first described); a neural network. <strong>Why not the average:</strong> it cannot see trend, holidays, or the interaction between them. It was kept as a baseline and LightGBM beat it, but not by a landslide: 9.28 versus 10.34 calls per day of error. <strong>Why not deep learning:</strong> 43,824 rows is small, there are 14 features, and the model has to be explainable to a client whose brand is trust. Trees on calendar features can be read.</p>
+  <div class="box tradeoff"><div class="t">What it costs</div><p>Trees cannot extrapolate. The "days since start" feature lets the model separate 2021 from 2025, but for a date beyond the training range the model returns the value for the last leaf it knows, roughly late-2025 behaviour. If volume keeps growing at the seed data's pace, every forecast for 2026 and beyond is a little low, and the further out, the lower. A retrain after each new month of data is the mitigation, and it is a manual step.</p></div>
+
+  <h3>4.4 Poisson objective instead of ordinary regression</h3>
+  <p><strong>Chose:</strong> LightGBM's <code>objective="poisson"</code>. <strong>Alternative:</strong> the default squared-error objective, which treats the target like a temperature reading. <strong>Why:</strong> the target is a count of events that arrive independently at some rate. A Poisson objective says two things a plain regression does not: the answer can never be negative, and being off by 2 calls in an hour that usually has 1 is a bigger mistake than being off by 2 in an hour that usually has 10. Think of a bus stop: if a bus comes every 10 minutes on average, the number that show up in an hour is not always 6, but the spread around 6 is predictable and is roughly the square root of 6. Poisson builds that in.</p>
+  <p>Measured on the seed grid: mean 2.131 calls per hour, variance 3.150. A pure Poisson process would have variance equal to the mean. The ratio is 1.478, which says the raw counts are somewhat more spread out than Poisson. After the model accounts for hour, weekday, and the rest, the remaining spread in the January 2024 test month is 1.168 times what Poisson expects. Mild. The point forecast is unaffected by this; only confidence intervals would be, and the tool does not show intervals yet.</p>
+  <div class="box tradeoff"><div class="t">What it costs</div><p>Nothing in the point forecast. If intervals are added later, plain Poisson intervals will be about 8% too narrow on this data. A negative-binomial or Tweedie objective would fix that, at the price of one more parameter to explain.</p></div>
+
+  <h3>4.5 Calendar features only, no lag features</h3>
+  <p><strong>Chose:</strong> 14 features, all computable from the date and the holiday table alone. <strong>Alternative:</strong> add "calls in the same hour last week" or "average of the last 7 days" as inputs, which usually helps short-range forecasts. <strong>Why:</strong> the tool forecasts up to 30 days ahead so a schedule can be built a month out. On day 30 of the forecast, "last week" is itself a forecast, not a fact. Any lag feature would have to be fed its own predictions, and errors would compound day by day.</p>
+  <div class="box tradeoff"><div class="t">What it costs</div><p>The model cannot react to what happened yesterday. A news event that doubles volume this week will not change next week's forecast until a retrain. The seasonal-naive baseline, which does use the last 8 weeks, is the closest thing the tool has to a reactive forecast, and it is only reported in the backtest, not on the screen.</p></div>
+
+  <h3>4.6 One shared <code>build_features()</code></h3>
+  <p><strong>Chose:</strong> training and prediction both call the same function in <code>db/features.py</code>, and that file is the only place feature logic may live. <strong>Alternative:</strong> compute features in the training script and again, slightly differently, in the forecast script. <strong>Why:</strong> a model trained on one definition of "week of year" and asked about another silently produces wrong numbers with no error. The data-leakage audit confirmed by test that a 2-day forecast grid produces byte-identical feature rows to the same 2 days sliced from the training frame.</p>
+  <div class="box tradeoff"><div class="t">What it costs</div><p>Every feature must be computable for a future hour. That is what rules out lag features (4.5). It also means the function is called once on the whole 5-year frame before the backtest split, which is safe only while every feature depends on its own row. Adding a rolling feature there would leak future data into training instantly. A comment in the code says so; a unit test does not yet enforce it.</p></div>
+
+  <h3>4.7 Passing the training epoch explicitly</h3>
+  <p><strong>Chose:</strong> <code>build_features()</code> takes an <code>epoch</code> argument; the forecast passes the training start date recorded in <code>models/metadata.json</code> (2021-01-01). <strong>The bug this prevents:</strong> the trend feature <code>days_since_epoch</code> counts days from the first row of whatever frame it is given. Left alone, a forecast for January 2026 would start counting at 0, the model would read "day 0" as January 2021, and every prediction would be 2021-sized. This was caught in review before it shipped.</p>
+  <div class="box tradeoff"><div class="t">What it costs</div><p>The argument is optional and defaults to "first row of this frame", which is right for training and wrong for everything else. A future caller who forgets it gets a plausible-looking wrong forecast with no error raised. The audit recommended making the argument required; that is still open.</p></div>
+
+  <h3>4.8 Erlang C instead of Erlang A</h3>
+  <p><strong>Chose:</strong> Erlang C, the standard call-center staffing formula. <strong>Alternative:</strong> Erlang A, which adds one more input: how long callers are willing to wait before hanging up. <strong>Why:</strong> Erlang C has no free parameters beyond the load and the target, is published in every call-center reference, and could be verified against an outside calculator (it was: the erlang.com worked example of 400 calls per hour, 180-second calls, 30-second average delay, gives 23 agents in both). It was the right first step.</p>
+  <div class="box warn"><div class="t">The assumption that is false for us</div><p>Erlang C assumes every caller waits forever. Ours do not. In the seed data 8.06% of calls were abandoned, and the median abandoning caller gave up after 69 seconds. The column that measures this, <code>abandon_sec</code>, is in the database and is not read by any code. When callers hang up, the queue is shorter than Erlang C thinks, so Erlang C over-staffs slightly during normal hours. But it also hides the cost of under-staffing: with Erlang C, a bad hour shows up as long waits; in reality it shows up as veterans hanging up on a crisis line. Erlang A would report abandonment as its own number. This is the most important open item.</p></div>
+
+  <h3>4.9 Rolling-origin backtest instead of a random split</h3>
+  <p><strong>Chose:</strong> 24 folds. For each month from January 2024 to December 2025, train on every hour before that month, predict the whole month, score it. <strong>Alternative:</strong> shuffle all hours, hold out 20% at random. <strong>Why:</strong> a random split lets the model train on Tuesday 14:00 and be tested on Tuesday 15:00 of the same week. That is not forecasting. The rolling design is the only one that matches how the tool is used: predict a month you have not seen.</p>
+  <div class="box tradeoff"><div class="t">What it costs</div><p>Time. The full backtest fits the model 24 times plus once more on everything (55 seconds on the development laptop). And every reported metric is an average over 2024 and 2025 only, so it says nothing about how the model would have done in 2021 or 2022.</p></div>
+
+  <h3>4.10 Staffing a shift at its peak hour, not its average</h3>
+  <p><strong>Chose:</strong> a shift's staff number is the largest hourly requirement inside it. <strong>Alternative:</strong> the average or the total divided by hours. <strong>Why:</strong> people work whole shifts. If the Evening shift needs 4 people at 17:00 and 5 people at 21:00, scheduling 4.5 is meaningless and scheduling 4 misses the target every evening at 21:00. You staff for the peak or you miss the service level at the peak, and the client's public promise is answering inside 30 seconds.</p>
+  <div class="box tradeoff"><div class="t">What it costs</div><p>Overstaffing in the quiet hours of every shift. On the sample Monday in Section 6, Evening needs 5 from 18:00 onward but only 4 at 16:00 and 17:00. Those two hours carry one idle person. Split shifts or staggered starts would remove that; the tool does not model them.</p></div>
+
+  <h3>4.11 Surfacing the cap of 7 instead of clamping to it</h3>
+  <p><strong>Chose:</strong> if the math says 8, show 8, in red, with the word "over cap". <strong>Alternative:</strong> show 7 and move on. <strong>Why:</strong> a tool that clamps hides the exact information a manager needs: that the target is unreachable with the people available, and by how much. The cap is a fact about hiring; the requirement is a fact about demand. They belong on the screen together.</p>
+  <div class="box tradeoff"><div class="t">What it costs</div><p>The screen can show numbers the client cannot act on. With the seed data and default sliders this never happens across the 30-day window; it does at 95% service level (Section 7). Some managers will read a red 8 as a criticism rather than a forecast.</p></div>
+
+  <h3>4.12 Seeded synthetic data instead of the client's real data</h3>
+  <p><strong>Chose:</strong> build and test the whole pipeline on 93,407 generated calls shaped to the client's verbal description. <strong>Alternative:</strong> wait for the export. <strong>Why:</strong> data agreements at a university health system can take weeks. The pipeline, the tests, the API, and the screen do not care where the rows came from, so all of that could be built and reviewed now.</p>
+  <div class="box warn"><div class="t">Exactly what this invalidates</div><p>Every accuracy number in this document. The generator planted a 4.5% yearly growth, a 14% step on 2023-07-01, a 20:00 to 22:00 peak, Monday-high weekdays, and fixed holiday multipliers. The model recovered a shape it was, in effect, told to expect. Real calls will have news-driven spikes, campaign launches, referral partnerships going live, and months where nothing looks like last year. The "9.28 calls per day" figure is a statement about the pipeline's plumbing, not about Vets4Warriors. The handle-time numbers (mean 703 seconds) are also seeded; the client never stated a handle time and asked the team to measure it. Until real data lands, the right phrase for the model's real-world accuracy is: <strong>not yet measured</strong>.</p></div>
+</section>
+
+<!-- ============================================================ 5. TRAINING -->
+<section>
+  <h2 id="s5">5. How the model was trained</h2>
+  <p>Everything in this section is what <code>db/train.py</code> does, in order, with the numbers it recorded in <code>models/metadata.json</code>.</p>
+
+  <h3>5.1 Rows, target, features</h3>
+  <p><strong>Rows:</strong> 43,824, one per hour from 2021-01-01 00:00 to 2025-12-31 23:00, with zeros filled in for the 7,952 hours that had no calls. <strong>Target:</strong> <code>offered</code>, the number of calls that arrived in the hour. <strong>Features:</strong> the 14 below.</p>
+  <table class="compact">
+    <tr><th>Feature</th><th>Meaning</th></tr>
+    <tr><td><code>dow</code></td><td>Weekday, 1 = Monday to 7 = Sunday</td></tr>
+    <tr><td><code>hour</code></td><td>Hour of day, 0 to 23</td></tr>
+    <tr><td><code>month</code></td><td>1 to 12</td></tr>
+    <tr><td><code>week_of_year</code></td><td>ISO week, 1 to 53</td></tr>
+    <tr><td><code>days_since_epoch</code></td><td>Whole days since 2021-01-01; the trend feature</td></tr>
+    <tr><td><code>hour_sin</code>, <code>hour_cos</code></td><td>Hour placed on a circle so 23:00 and 00:00 are neighbours</td></tr>
+    <tr><td><code>dow_sin</code>, <code>dow_cos</code></td><td>Weekday placed on a circle so Sunday and Monday are neighbours</td></tr>
+    <tr><td><code>is_weekend</code></td><td>1 on Saturday and Sunday</td></tr>
+    <tr><td><code>is_holiday</code></td><td>1 if the date is in the holidays table</td></tr>
+    <tr><td><code>days_to_nearest_holiday</code></td><td>Signed days to the closest holiday, positive when it is ahead, clipped to plus or minus 14</td></tr>
+    <tr><td><code>holiday_volume_multiplier</code>, <code>holiday_evening_multiplier</code></td><td>The holiday table's two numbers, 0 on non-holidays</td></tr>
+  </table>
+  <p><strong>Model settings:</strong> objective Poisson, learning rate 0.05, 31 leaves per tree, at least 20 rows per leaf, 90% of features sampled per tree, seed 42, 500 trees. These were fixed before the backtest and never tuned. The rule was: if the fixed model does not beat the seasonal baseline, stop and report, do not search for settings that happen to win.</p>
+
+  <h3>5.2 How the backtest folds work</h3>
+  <p>A fold is one rehearsal of real use. Fold 1: pretend it is 2024-01-01. Train on every hour before it (26,280 hours, ending 2023-12-31 23:00). Predict all 744 hours of January 2024. Compare to what actually happened. Then move to 2024-02-01 and repeat with one more month of training data. The last fold trains through 2025-11-30 and predicts December 2025. That is 24 folds. The model never sees an hour from the month it is predicting, and the checks in the leakage audit confirmed the boundaries by asserting that the last training hour is 23:00 of the day before the first test hour, in every fold examined.</p>
+  <p>After the backtest, the model is trained one more time on all 43,824 hours and that final version is what the screen uses. Its own accuracy on unseen data is by definition not measured; the backtest numbers are the estimate.</p>
+
+  <h3>5.3 The two baselines</h3>
+  <p><strong>Seasonal naive:</strong> for each test hour, take the same weekday and hour over the 8 weeks before the test month and use the median. Example for Tuesday 2024-01-02 at 21:00: the eight preceding Tuesdays at 21:00 had 7, 4, 4, 2, 4, 5, 1, 6 calls; the median is 4. This is close to what a supervisor would do with a spreadsheet, and it is a strong baseline on data with a steady weekly rhythm.</p>
+  <p><strong>Overall mean:</strong> the average calls per hour over the whole training window, used for every hour. Deliberately dumb. It exists so you can see how much of the model's skill is just "knowing the average" versus knowing the shape.</p>
+
+  <h3>5.4 What the metrics mean</h3>
+  <p>All four are computed over every test hour of every fold pooled together (17,544 hours), so a fold with more hours counts more. Each is illustrated with the model's real predictions for one day, Tuesday 2024-01-02, from the January 2024 fold.</p>
+  <table class="compact">
+    <tr><th>Hour</th><th class="n">Actual</th><th class="n">Predicted</th><th class="n">Error</th><th>Hour</th><th class="n">Actual</th><th class="n">Predicted</th><th class="n">Error</th></tr>
+    <tr><td>00:00</td><td class="n">2</td><td class="n">2.304</td><td class="n">0.304</td><td>12:00</td><td class="n">1</td><td class="n">3.001</td><td class="n">2.001</td></tr>
+    <tr><td>01:00</td><td class="n">2</td><td class="n">1.925</td><td class="n">0.075</td><td>13:00</td><td class="n">5</td><td class="n">3.048</td><td class="n">1.952</td></tr>
+    <tr><td>02:00</td><td class="n">0</td><td class="n">1.231</td><td class="n">1.231</td><td>14:00</td><td class="n">4</td><td class="n">3.350</td><td class="n">0.650</td></tr>
+    <tr><td>03:00</td><td class="n">1</td><td class="n">1.159</td><td class="n">0.159</td><td>15:00</td><td class="n">4</td><td class="n">3.271</td><td class="n">0.729</td></tr>
+    <tr><td>04:00</td><td class="n">2</td><td class="n">1.061</td><td class="n">0.939</td><td>16:00</td><td class="n">0</td><td class="n">3.463</td><td class="n">3.463</td></tr>
+    <tr><td>05:00</td><td class="n">1</td><td class="n">1.030</td><td class="n">0.030</td><td>17:00</td><td class="n">3</td><td class="n">3.500</td><td class="n">0.500</td></tr>
+    <tr><td>06:00</td><td class="n">1</td><td class="n">1.257</td><td class="n">0.257</td><td>18:00</td><td class="n">2</td><td class="n">3.506</td><td class="n">1.506</td></tr>
+    <tr><td>07:00</td><td class="n">1</td><td class="n">1.262</td><td class="n">0.262</td><td>19:00</td><td class="n">5</td><td class="n">3.786</td><td class="n">1.214</td></tr>
+    <tr><td>08:00</td><td class="n">1</td><td class="n">2.068</td><td class="n">1.068</td><td>20:00</td><td class="n">2</td><td class="n">4.724</td><td class="n">2.724</td></tr>
+    <tr><td>09:00</td><td class="n">0</td><td class="n">2.610</td><td class="n">2.610</td><td>21:00</td><td class="n">1</td><td class="n">4.511</td><td class="n">3.511</td></tr>
+    <tr><td>10:00</td><td class="n">2</td><td class="n">2.683</td><td class="n">0.683</td><td>22:00</td><td class="n">3</td><td class="n">4.078</td><td class="n">1.078</td></tr>
+    <tr><td>11:00</td><td class="n">3</td><td class="n">2.895</td><td class="n">0.105</td><td>23:00</td><td class="n">2</td><td class="n">3.182</td><td class="n">1.182</td></tr>
+    <tr class="hl"><td>Day</td><td class="n">48</td><td class="n">64.90</td><td class="n">16.90</td><td></td><td></td><td></td><td></td></tr>
+  </table>
+  <p class="cap">"Error" is the absolute difference, predicted minus actual, sign dropped. This was a quiet Tuesday; the model over-predicted most evening hours.</p>
+
+  <p><strong>MAE, mean absolute error.</strong> Add up the 24 hourly errors, divide by 24. For this day: 1.176 calls per hour. Read it as "in a typical hour, the forecast is off by about this many calls". It treats a miss of 3 as three times as bad as a miss of 1.</p>
+  <p><strong>RMSE, root mean squared error.</strong> Square each error, average them, take the square root. For this day: 1.557. Squaring makes big misses count more, so RMSE is always at least MAE, and the gap between them tells you how lumpy the errors are. Here the 16:00 and 21:00 misses drive it.</p>
+  <p><strong>MAPE, mean absolute percentage error.</strong> Each error divided by the actual, averaged, times 100, using only hours where the actual was above zero (you cannot divide by zero). For this day: 59.7%. On small counts MAPE is harsh and misleading: predicting 2.3 for an hour with 1 call is a 130% error even though it is off by one call. It is reported because people ask for it; do not steer by it.</p>
+  <p><strong>Daily-total MAE.</strong> Sum the 24 predictions, sum the 24 actuals, take the difference, then average that over all days. For this day: 16.90. This is the number the client cares about, because hourly errors partly cancel across a day and the schedule is built per shift, not per hour.</p>
+
+  <h3>5.5 The measured results</h3>
+  <table>
+    <tr><th>Model</th><th class="n">MAE (calls/hour)</th><th class="n">RMSE</th><th class="n">MAPE %</th><th class="n">Daily-total MAE (calls/day)</th></tr>
+    <tr class="hl"><td>LightGBM, Poisson</td><td class="n">1.256</td><td class="n">1.632</td><td class="n">53.0</td><td class="n">9.28</td></tr>
+    <tr><td>Seasonal naive (8-week median)</td><td class="n">1.336</td><td class="n">1.778</td><td class="n">56.4</td><td class="n">10.34</td></tr>
+    <tr><td>Overall mean</td><td class="n">1.463</td><td class="n">1.946</td><td class="n">50.8</td><td class="n">12.66</td></tr>
+  </table>
+  <p class="cap">Pooled over 24 test months, January 2024 to December 2025, 17,544 hours. The overall mean "wins" MAPE only because under-predicting is rewarded by that metric on small counts; it is the worst model on every other measure.</p>
+  <p>Per month, LightGBM had the lowest daily-total error in 16 of 24 folds, seasonal naive in 7, the flat mean in 1. LightGBM's best month was March 2024 (6.83 calls per day) and its worst was December 2024 (12.47). December is where the holiday features matter most and where the seasonal baseline was worst too (15.82).</p>
+  <p>The first fold, January 2024, is a fair single example: LightGBM 11.19 calls per day, seasonal naive 11.44, flat mean 19.66.</p>
+
+  <div class="box key"><div class="t">How wrong it typically is, in the client's units</div><p>On a typical day the forecast of the day's total is off by about 9 calls, on days that average 51 calls. Per hour it is off by about 1.3 calls, on hours that average 2.1. Because staffing rounds to whole people, that hourly error usually moves the answer by zero or one person. Read every shift number as plus or minus one. This is the seed data's answer. The real data's answer is not yet measured.</p></div>
+</section>
+
+<!-- ============================================================ 6. STAFFING MATH -->
+<section>
+  <h2 id="s6">6. From predicted calls to a staffing number</h2>
+  <p>This section follows one real hour from the forecast all the way to a shift number. The hour is Monday 2026-01-05 at 21:00, the busiest hour of the seed data's typical day. Every number was produced by running the project's own code.</p>
+
+  <h3>6.1 What an erlang is</h3>
+  <p>An erlang is one person kept busy for one hour. If 5 calls arrive in an hour and each lasts 12 minutes, that is 60 minutes of talking, which is 1 erlang: on average one person is on the phone the whole hour. Two erlangs means on average two people are talking at any instant. It is the unit of workload, and it is the only thing Erlang C needs to know about demand.</p>
+<pre>load (erlangs)  =  calls_per_hour  ×  aht_sec  ÷  3600</pre>
+  <table class="sym compact">
+    <tr><td>calls_per_hour</td><td>the model's predicted calls for the hour</td></tr>
+    <tr><td>aht_sec</td><td>average handle time in seconds, for that weekday and hour</td></tr>
+    <tr><td>3600</td><td>seconds in an hour</td></tr>
+  </table>
+  <p><strong>Worked:</strong> for 2026-01-05 21:00 the model predicts 5.0523 calls and the AHT table says 623.34 seconds. Load = 5.0523 × 623.34 ÷ 3600 = <strong>0.8748 erlangs</strong>. Slightly less than one person continuously busy.</p>
+
+  <h3>6.2 Where the AHT comes from</h3>
+  <p>For each of the 168 (weekday, hour) cells, take every answered call in that cell from the whole history and average its talk time, but weight recent calls more. A call from one year ago counts half as much as one from today; two years ago, a quarter.</p>
+<pre>weight  =  0.5 ^ (age_days ÷ 365)
+aht_cell  =  Σ(weight × agent_sec)  ÷  Σ(weight)</pre>
+  <table class="sym compact">
+    <tr><td>age_days</td><td>days between the call and the newest call in the table</td></tr>
+    <tr><td>365</td><td>the half-life in days; the default in <code>db/aht.py</code></td></tr>
+    <tr><td>agent_sec</td><td>that call's talk time</td></tr>
+  </table>
+  <p>A cell with fewer than 30 answered calls falls back to the global weighted mean. On the seed data no cell needs the fallback; cell values run from 573 to 1,024 seconds, with nights longer than days as the client described.</p>
+
+  <h3>6.3 What Erlang C computes and what it assumes</h3>
+  <p>Erlang C answers one question: with N people available and a load of A erlangs, what is the probability that an arriving call finds everyone busy and has to wait? Call that C. It assumes calls arrive at random with a steady rate, call lengths vary around a fixed average, everyone waits as long as it takes, and the N people are interchangeable and always available. The waiting-forever assumption is the one that is wrong for us (Section 4.8).</p>
+  <p>An analogy: a bank with N tellers. Erlang C says how often a customer walks in to find no free teller. Add a teller and that chance drops; add load and it climbs. It climbs steeply as the load approaches N, which is why one more person makes a large difference at small team sizes.</p>
+  <p>The code does not use the textbook formula with factorials, which overflow past about 170. It walks up a recurrence one server at a time:</p>
+<pre>B(0) = 1
+B(k) = A × B(k−1)  ÷  ( k + A × B(k−1) )        for k = 1 … N
+C    = N × B(N)  ÷  ( N − A × (1 − B(N)) )</pre>
+  <table class="sym compact">
+    <tr><td>A</td><td>load in erlangs</td></tr>
+    <tr><td>N</td><td>number of people on the phones</td></tr>
+    <tr><td>B(k)</td><td>the chance a call is turned away if there were k servers and no queue (Erlang B); a stepping stone</td></tr>
+    <tr><td>C</td><td>the chance an arriving call has to wait at all (Erlang C)</td></tr>
+  </table>
+  <p>Edge rules in the code: if N is no larger than A the queue grows without bound, so C is 1. If A is 0, C is 0.</p>
+
+  <h3>6.4 The service-level formula, symbol by symbol</h3>
+  <p>"Waits at all" is not the target. The target is "answered within 30 seconds". Among the callers who wait, the chance of waiting longer than t seconds falls off exponentially with how much spare capacity there is:</p>
+<pre>service_level  =  1  −  C  ×  exp( −(N − A) × t ÷ aht_sec )</pre>
+  <table class="sym compact">
+    <tr><td>C</td><td>Erlang C from above: share of callers who wait at all</td></tr>
+    <tr><td>N − A</td><td>spare capacity: people minus average people busy</td></tr>
+    <tr><td>t</td><td>the target seconds, 30</td></tr>
+    <tr><td>aht_sec</td><td>average handle time, same as in the load</td></tr>
+    <tr><td>exp(−x)</td><td>e raised to −x; a number between 0 and 1 that shrinks as x grows</td></tr>
+  </table>
+  <p>Reading it: the share who wait longer than 30 seconds is C times a shrink factor. More spare capacity, shorter calls, or a more generous t all shrink it. Subtract from 1 to get the share answered in time.</p>
+
+  <h3>6.5 The full worked example</h3>
+  <p>Hour: Monday 2026-01-05 21:00. Predicted calls 5.0523. AHT 623.34 seconds. Load A = 0.8748 erlangs. Target: 80% within 30 seconds. The code starts at N = ceil(A) + 1 = 2 and climbs; the table starts at 1 so you can see why 1 fails.</p>
+  <table>
+    <tr><th class="n">N</th><th class="n">Erlang C</th><th class="n">exp(−(N−A)×30÷623.34)</th><th class="n">Service level</th><th>Clears 80%?</th></tr>
+    <tr><td class="n">1</td><td class="n">0.8748</td><td class="n">0.9940</td><td class="n">0.1305</td><td>no</td></tr>
+    <tr><td class="n">2</td><td class="n">0.2662</td><td class="n">0.9473</td><td class="n">0.7478</td><td>no</td></tr>
+    <tr class="hl"><td class="n">3</td><td class="n">0.0652</td><td class="n">0.9028</td><td class="n">0.9411</td><td>yes, stop here</td></tr>
+    <tr><td class="n">4</td><td class="n">0.0130</td><td class="n">0.8604</td><td class="n">0.9888</td><td>(not needed)</td></tr>
+    <tr><td class="n">5</td><td class="n">0.0022</td><td class="n">0.8199</td><td class="n">0.9982</td><td>(not needed)</td></tr>
+  </table>
+  <p>Check one row by hand. N = 2: spare capacity 2 − 0.8748 = 1.1252. Exponent: −1.1252 × 30 ÷ 623.34 = −0.05415, and e to that power is 0.9473. Service level 1 − 0.2662 × 0.9473 = 0.7478. Below 0.80, so 2 people are not enough. At N = 3 it jumps to 0.9411. <strong>Agents required: 3.</strong> Notice the jump from 75% to 94%. With less than one erlang of load, one extra person is a huge step, and there is no way to land exactly on 80%.</p>
+
+  <h3>6.6 The efficiency division, same example</h3>
+  <p>Three people on the phones is not three people on the schedule. Breaks, lunch, outbound follow-up calls, and paperwork take a share of every shift. The efficiency slider is that share's complement: 0.65 means a scheduled person is free for inbound calls 65% of the time.</p>
+<pre>scheduled_needed   =  ceil( agents_required ÷ efficiency )
+effective_agents   =  floor( scheduled_needed × efficiency )
+service_level_at_scheduled  =  service level recomputed with N = effective_agents</pre>
+  <p><strong>Worked:</strong> 3 ÷ 0.65 = 4.615, rounded up to <strong>5 people to schedule</strong>. Those 5 give floor(5 × 0.65) = floor(3.25) = 3 on the phones, and the service level at 3 is 0.9411, as in the table. The rounding always lands at or above the requirement; the review proved by exhaustive check over every efficiency setting and every agent count up to 20 that <code>effective_agents</code> is never below <code>agents_required</code>.</p>
+
+  <div class="box key"><div class="t">Doing it by hand</div><p>Predicted calls × seconds per call ÷ 3600 is the load. Start with N one above the load, compute Erlang C and the service level, and go up until it clears the target. Divide by the efficiency, round up. Take the biggest hour in the shift. That is the entire algorithm.</p></div>
+
+  <div class="keep">
+  <h3>6.7 The shift roll-up, same example</h3>
+  <p>Now do the same for all 24 hours of 2026-01-05 and group by shift. The Evening shift (16:00 to 00:30) covers these hours:</p>
+  <table class="compact">
+    <tr><th>Hour</th><th class="n">Predicted calls</th><th class="n">Agents required</th><th class="n">Staff to schedule</th></tr>
+    <tr><td>16:00</td><td class="n">3.52</td><td class="n">2</td><td class="n">4</td></tr>
+    <tr><td>17:00</td><td class="n">3.89</td><td class="n">2</td><td class="n">4</td></tr>
+    <tr><td>18:00</td><td class="n">4.57</td><td class="n">3</td><td class="n">5</td></tr>
+    <tr><td>19:00</td><td class="n">4.67</td><td class="n">3</td><td class="n">5</td></tr>
+    <tr><td>20:00</td><td class="n">4.90</td><td class="n">3</td><td class="n">5</td></tr>
+    <tr class="hl"><td>21:00</td><td class="n">5.05</td><td class="n">3</td><td class="n">5</td></tr>
+    <tr><td>22:00</td><td class="n">4.90</td><td class="n">3</td><td class="n">5</td></tr>
+    <tr><td>23:00</td><td class="n">3.83</td><td class="n">3</td><td class="n">5</td></tr>
+  </table>
+  </div>
+  <p>Predicted calls for the shift is the sum of its eight core hours: 35.34. Staff for the shift is the maximum: <strong>5</strong>. The 00:00 hour of the next day, which the Evening shift also covers until 00:30, would join the maximum if it were in the requested range. The full day:</p>
+  <table>
+    <tr><th>Shift</th><th class="n">Predicted calls</th><th class="n">Agents required (max)</th><th class="n">Staff to schedule (max)</th><th>Over cap of 7?</th></tr>
+    <tr><td>Overnight 00:00 to 08:30</td><td class="n">14.69</td><td class="n">2</td><td class="n">4</td><td>no</td></tr>
+    <tr><td>Day 08:00 to 16:30</td><td class="n">27.76</td><td class="n">2</td><td class="n">4</td><td>no</td></tr>
+    <tr><td>Evening 16:00 to 00:30</td><td class="n">35.34</td><td class="n">3</td><td class="n">5</td><td>no</td></tr>
+  </table>
+  <div class="box tradeoff"><div class="t">Why Overnight needs as many people as Day here</div><p>Overnight has half the calls of Day (14.69 versus 27.76), yet both need 2 on the phones and 4 on the schedule. Two reasons. Overnight calls are long in the seed data (AHT 813 to 1,008 seconds versus 586 to 663 by day), so each call carries more load. And at loads under one erlang, one person cannot reach 80% in 30 seconds, so the answer is 2 for any hour with meaningful traffic, day or night. The client's own estimate was 4 to 5 overnight; the tool says 4. Whether that holds on real data is not yet measured.</p></div>
+
+</section>
+
+<!-- ============================================================ 7. CONTROLS -->
+<section>
+  <h2 id="s7">7. What each control on the screen actually does</h2>
+  <p>The screen has three inputs. Each one is sent to the API as a query parameter and lands in exactly one place in the math. Tables below were produced by calling <code>staff_for_hour()</code> with the values shown, for the same hour as Section 6: Monday 2026-01-05 21:00, 5.0523 predicted calls, AHT 623.34 seconds, load 0.8748 erlangs.</p>
+
+  <h3>7.1 Date range</h3>
+  <p><strong>What it changes:</strong> which hours get forecast. Nothing else. For each hour in the range the features are rebuilt (weekday, hour, month, trend days since 2021-01-01, holiday flags) and the model is asked. The defaults are today through 29 days ahead, built from the browser's local date. The API refuses ranges over 366 days.</p>
+  <p><strong>Which way the numbers move:</strong> later dates get a slightly larger trend value, but as Section 4.3 explains the trees do not extrapolate, so a date in 2027 returns roughly what late 2025 looked like. Dates that fall on a holiday in the table get the holiday features; if the range runs past the last holiday in the table (2027-12-31 today), the page shows an amber banner saying so.</p>
+
+  <h3>7.2 Staff efficiency slider, 50% to 85%</h3>
+  <p><strong>What it changes:</strong> only the division in Section 6.6. Agents required is untouched. <strong>Which way:</strong> lower efficiency means each scheduled person contributes less, so more must be scheduled. The number moves in steps because of the round-up.</p>
+  <table class="compact">
+    <tr><th class="n">Efficiency</th><th class="n">Agents required</th><th class="n">agents ÷ efficiency</th><th class="n">Staff to schedule</th><th class="n">Service level delivered</th></tr>
+    <tr><td class="n">0.50</td><td class="n">3</td><td class="n">6.00</td><td class="n">6</td><td class="n">0.941</td></tr>
+    <tr><td class="n">0.55</td><td class="n">3</td><td class="n">5.45</td><td class="n">6</td><td class="n">0.941</td></tr>
+    <tr><td class="n">0.60</td><td class="n">3</td><td class="n">5.00</td><td class="n">5</td><td class="n">0.941</td></tr>
+    <tr class="hl"><td class="n">0.65 (default)</td><td class="n">3</td><td class="n">4.62</td><td class="n">5</td><td class="n">0.941</td></tr>
+    <tr><td class="n">0.70</td><td class="n">3</td><td class="n">4.29</td><td class="n">5</td><td class="n">0.941</td></tr>
+    <tr><td class="n">0.75</td><td class="n">3</td><td class="n">4.00</td><td class="n">4</td><td class="n">0.941</td></tr>
+    <tr><td class="n">0.80</td><td class="n">3</td><td class="n">3.75</td><td class="n">4</td><td class="n">0.941</td></tr>
+    <tr><td class="n">0.85</td><td class="n">3</td><td class="n">3.53</td><td class="n">4</td><td class="n">0.941</td></tr>
+  </table>
+  <p class="cap">Target held at 80%. The delivered service level never changes because the people on the phones (3) never change; only how many bodies it takes to get 3 changes.</p>
+
+  <div class="keep">
+  <h3>7.3 Service level target slider, 80% to 95%</h3>
+  <p><strong>What it changes:</strong> the threshold in Section 6.5 that the climbing loop must clear. <strong>Which way:</strong> a stricter target can only raise agents required, which then raises the schedule through the division.</p>
+  <table class="compact">
+    <tr><th class="n">Target</th><th class="n">Agents required</th><th class="n">Staff to schedule at 0.65</th><th class="n">Service level delivered</th></tr>
+    <tr class="hl"><td class="n">0.80 (default)</td><td class="n">3</td><td class="n">5</td><td class="n">0.941</td></tr>
+    <tr><td class="n">0.85</td><td class="n">3</td><td class="n">5</td><td class="n">0.941</td></tr>
+    <tr><td class="n">0.90</td><td class="n">3</td><td class="n">5</td><td class="n">0.941</td></tr>
+    <tr><td class="n">0.95</td><td class="n">4</td><td class="n">7</td><td class="n">0.989</td></tr>
+  </table>
+  <p class="cap">At 95% this hour hits the cap of 7 exactly; the screen shows it in amber as "at cap".</p>
+  </div>
+
+  <h3>7.4 Why raising the target from 80% to 90% sometimes adds two staff and sometimes none</h3>
+  <p>Because the service level moves in big jumps at small team sizes, and the schedule moves in big jumps through the round-up. At 21:00 above, 3 people already deliver 94%, so a 90% target changes nothing: zero added. Scanning the other hours of the same Monday with the code:</p>
+  <table class="compact">
+    <tr><th>Hour</th><th class="n">Load</th><th class="n">Agents at 80%</th><th class="n">Agents at 90%</th><th class="n">Schedule at 80%</th><th class="n">Schedule at 90%</th><th class="n">Added</th></tr>
+    <tr><td>04:00</td><td class="n">0.287</td><td class="n">2</td><td class="n">2</td><td class="n">4</td><td class="n">4</td><td class="n">0</td></tr>
+    <tr><td>12:00</td><td class="n">0.648</td><td class="n">2</td><td class="n">3</td><td class="n">4</td><td class="n">5</td><td class="n">1</td></tr>
+    <tr><td>21:00</td><td class="n">0.875</td><td class="n">3</td><td class="n">3</td><td class="n">5</td><td class="n">5</td><td class="n">0</td></tr>
+    <tr><td>22:00</td><td class="n">1.265</td><td class="n">3</td><td class="n">4</td><td class="n">5</td><td class="n">7</td><td class="n">2</td></tr>
+  </table>
+  <p>Three things are happening. First, whether one more agent is needed depends on how close the current service level sits to the new target; 12:00 was just under 90% with 2 agents, 21:00 was well over with 3. Second, the round-up amplifies: going from 3 to 4 agents at 0.65 efficiency is 4.62 to 6.15, which rounds to 5 and 7, a jump of two scheduled people for one extra agent. Third, at 22:00 the calls are long (AHT 930 seconds), so the load is higher and the service level is more sensitive to N. Across the 24 hours of that Monday the change is 0 for 12 hours, 1 for 11 hours, and 2 for one hour. The shift roll-up then takes the maximum, so the Evening shift moves from 5 to 7 on the strength of that single 22:00 hour.</p>
+  <div class="box key"><div class="t">The rule of thumb</div><p>At this line's size the answer space is "2, 3, or 4 people on the phones". Each step is a 33% to 50% change in capacity. Sliders do not move the number smoothly; they move it when a threshold is crossed, and the round-up can turn one crossed threshold into two scheduled people. This is a property of small call centers, not a bug.</p></div>
+</section>
+
+<!-- ============================================================ 8. LIMITATIONS -->
+<section>
+  <h2 id="s8">8. Known limitations and what's next</h2>
+  <p>Three independent reviews were run on 2026-09-13: a data-leakage audit of the training script, a math audit of the queueing and staffing code, and a run-from-clean-copy audit of the whole MVP. Their reports are in <code>reviews/</code>. Items they raised that were fixed the same day: the wrong test expectation, the holiday table ending in 2025, working-directory-relative paths, no pinned dependencies, the missing note about <code>libomp</code> on macOS, UTC default dates on the page, no caching of the model between slider moves, and tests that failed instead of skipping without a database. What follows is what is still open.</p>
+
+  <h3>Model and data</h3>
+  <ul>
+    <li><strong>No real data.</strong> Every number in this document is from seeded calls. Real-world accuracy: not yet measured. First action when the export arrives: run the ingest, then <code>make train</code>, and read the new backtest table before believing anything.</li>
+    <li><strong>Erlang A.</strong> Callers hang up (8.06% in the seed) and <code>abandon_sec</code> is unused. Erlang A takes a patience distribution from that column and reports expected abandonment. It is the single biggest correctness upgrade.</li>
+    <li><strong>Holiday multipliers.</strong> The two multiplier features are constants of unknown origin, identical every year, and the "evening" one applies to all 24 hours. On the July 2024 fold the model did slightly better without them (11.17 versus 11.92 calls per day). The audit recommends either dropping them or recomputing them from data before 2024 and restricting the evening one to evening hours.</li>
+    <li><strong>Trees do not extrapolate.</strong> Forecasts beyond the training window flatten at late-2025 levels. A retrain per month of new data is the only mitigation, and it is manual.</li>
+    <li><strong>Outbound work.</strong> Not forecast and not subtracted from capacity. The client has a 2,200-person ongoing-support caseload whose follow-up calls consume the same people. The efficiency slider is the only place this can be expressed today.</li>
+    <li><strong>No confidence intervals.</strong> Only point forecasts. Counts are about 1.17 times more spread out than Poisson after modeling, so naive Poisson intervals would be too narrow.</li>
+  </ul>
+
+  <h3>Code</h3>
+  <ul>
+    <li><strong>Search start over-states hourly agents at very low loads.</strong> The loop starts at ceil(load) + 1, but ceil(load) is already stable for non-integer loads. On the seed forecast this adds one agent in 10.2% of hours, all with load 0.21 erlangs or less, between 03:00 and 08:00. Shift-level output is unchanged in all 5,478 shifts checked, because every shift contains a busier hour. The specification said ceil(load) + 1; the code follows it.</li>
+    <li><strong>The <code>epoch</code> argument is optional.</strong> A future caller that omits it gets 2021-sized forecasts with no error. Should be required.</li>
+    <li><strong>No guard against history-dependent features.</strong> <code>build_features()</code> is safe only while every feature depends on its own row. A comment says so; no test enforces it.</li>
+    <li><strong>Reproducibility not pinned.</strong> Seed is set, but LightGBM's <code>deterministic</code> and <code>num_threads</code> are not, so another machine may produce slightly different numbers.</li>
+    <li><strong>Metadata can be misread.</strong> <code>models/metadata.json</code> lists the backtest metrics next to a train end of 2025-12-31; the saved model was refit on all data, so those metrics are not its own out-of-sample error.</li>
+    <li><strong>Handle time may be incomplete.</strong> <code>agent_sec</code> is talk time; whether after-call work exists and should be added is unknown. The maximum is exactly 7,200, which looks like a cap.</li>
+    <li><strong>Small unreachable edge cases</strong> in the shift roll-up (partial shifts at the edge of a window, duplicate hours) and in the service-level helper (negative result when agents do not exceed load). Neither can be triggered through the API today.</li>
+    <li><strong>The README states the hourly mean as "roughly 1.6".</strong> The grid mean is 2.13. The README needs correcting.</li>
+  </ul>
+
+  <h3>Operations</h3>
+  <ul>
+    <li>The environment file is loaded in five modules and once in the Makefile; one loader would be cleaner.</li>
+    <li><code>make serve</code> always runs with auto-reload, which is a development setting.</li>
+    <li>No package layout (<code>__init__.py</code>), so tests rely on a path hack.</li>
+    <li>The holiday table now ends 2027-12-31. Someone has to add 2028 before then.</li>
+  </ul>
+
+  <h3>Questions only the client can answer</h3>
+  <ul>
+    <li>What is the actual average agent time per inbound call, and does it include wrap-up?</li>
+    <li>Is the historical figure of roughly 100,000 calls inbound phone only, or all channels?</li>
+    <li>When does the 30-second clock start, and is the 80 to 85% figure over all offered calls or answered calls only?</li>
+    <li>Does the Verizon/NICE CXone contract already include a workforce-management module?</li>
+  </ul>
+</section>
+
+<!-- ============================================================ 9. GLOSSARY -->
+<section>
+  <h2 id="s9">9. Glossary</h2>
+  <dl class="gloss">
+    <dt>Abandoned call</dt><dd>A caller who hung up before an agent answered.</dd>
+    <dt>Agents required</dt><dd>People who must be on the phones in a given hour to meet the service-level target, from Erlang C.</dd>
+    <dt>AHT (average handle time)</dt><dd>Typical seconds an agent spends on one call; here, talk time on answered calls, recency-weighted, per weekday and hour.</dd>
+    <dt>Backtest</dt><dd>Testing a forecast by rerunning history: train on the past, predict a period that was hidden, compare.</dd>
+    <dt>Baseline</dt><dd>A deliberately simple forecast the model must beat to justify its existence.</dd>
+    <dt>Cap</dt><dd>The client's practical limit of 7 people per shift. Flagged, never enforced by the tool.</dd>
+    <dt>Daily-total MAE</dt><dd>Average, over days, of how far the predicted day total was from the actual day total.</dd>
+    <dt>Efficiency</dt><dd>The share of a scheduled shift a person is actually free to take inbound calls. Slider, 50% to 85%, default 65%.</dd>
+    <dt>Epoch</dt><dd>The fixed start date (2021-01-01) that the trend feature counts days from.</dd>
+    <dt>Erlang</dt><dd>One person continuously busy for one hour. The unit of workload.</dd>
+    <dt>Erlang A</dt><dd>Erlang C plus a model of callers giving up. Not yet implemented.</dd>
+    <dt>Erlang B</dt><dd>The chance a call is turned away when there is no queue; used only as a stepping stone to compute Erlang C.</dd>
+    <dt>Erlang C</dt><dd>The chance an arriving call has to wait, given N people and a load in erlangs; assumes nobody hangs up.</dd>
+    <dt>Feature</dt><dd>One input column the model reads, such as hour of day or is-holiday.</dd>
+    <dt>Fold</dt><dd>One rehearsal in the backtest: one training window and one test month.</dd>
+    <dt>Gradient-boosted trees / LightGBM</dt><dd>A model made of hundreds of small decision trees, each trained to fix the errors of the ones before it. LightGBM is the software that builds them.</dd>
+    <dt>Hourly grid</dt><dd>One row per clock hour across the whole period, with zero where no calls arrived.</dd>
+    <dt>Lag feature</dt><dd>An input built from earlier values of the thing being predicted, such as "calls last week". Deliberately not used.</dd>
+    <dt>Leakage</dt><dd>Any way test-period information reaches the model during training or evaluation, making results look better than they would be in real use.</dd>
+    <dt>Load</dt><dd>Predicted calls times seconds per call divided by 3,600. Measured in erlangs.</dd>
+    <dt>MAE (mean absolute error)</dt><dd>Average size of the forecast miss, sign ignored.</dd>
+    <dt>MAPE (mean absolute percentage error)</dt><dd>Average miss as a percentage of the actual, over hours with at least one call. Unreliable on small counts.</dd>
+    <dt>Offered</dt><dd>Calls that arrived in an hour, answered or not. The forecast target.</dd>
+    <dt>Poisson objective</dt><dd>A training rule that treats the target as a count of independent events, so it cannot go negative and scales its errors to the expected count.</dd>
+    <dt>Rolling origin</dt><dd>A backtest where the training window's end moves forward one step at a time and each step predicts the next block.</dd>
+    <dt>RMSE (root mean squared error)</dt><dd>Like MAE but big misses count more.</dd>
+    <dt>Seasonal naive</dt><dd>Baseline: median of the same weekday and hour over the previous 8 weeks.</dd>
+    <dt>Service level</dt><dd>Share of calls answered within a target time. Here, within 30 seconds; slider from 80% to 95%.</dd>
+    <dt>Shift roll-up</dt><dd>Taking the largest hourly staff number inside a shift's window as that shift's requirement.</dd>
+    <dt>Staff to schedule</dt><dd>Agents required divided by efficiency, rounded up.</dd>
+    <dt>Synthetic (seeded) data</dt><dd>Rows produced by a script to resemble the client's description, used until real data arrives.</dd>
+    <dt>View</dt><dd>A saved database query that behaves like a table and is recomputed on every read.</dd>
+  </dl>
+</section>
+
+</body>
+</html>
