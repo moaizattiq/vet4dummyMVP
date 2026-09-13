@@ -27,6 +27,7 @@
   .banner { background: var(--navy-2); color: #dfe6f3; border-left: 4px solid #6f8fc7; padding: 12px 16px; border-radius: 6px; margin-bottom: 18px; font-size: 13px; }
   .banner strong { color: #fff; }
   .banner.error { background: var(--red-bg); color: var(--red); border-left-color: var(--red); }
+  .banner.notice { background: #fff4d6; color: #6b4e00; border-left-color: #d99a00; }
   .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 16px; margin-bottom: 18px; }
   .control label { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 6px; }
   .control input[type=date] { width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; font: inherit; }
@@ -64,6 +65,7 @@
 
 <main>
   <div id="banner" class="banner">Loading model info…</div>
+  <div id="holidayBanner" class="banner notice" hidden></div>
 
   <section class="controls">
     <div class="control">
@@ -119,8 +121,15 @@
   const $ = (id) => document.getElementById(id);
   const startEl = $("start"), endEl = $("end"), effEl = $("eff"), slEl = $("sl");
   const rowsEl = $("rows"), chartEl = $("chart"), statusEl = $("status"), bannerEl = $("banner");
+  const holidayBannerEl = $("holidayBanner");
 
-  function isoDate(d) { return d.toISOString().slice(0, 10); }
+  // Local calendar date, not UTC: toISOString() would roll evening users to tomorrow.
+  function isoDate(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
   function setDefaults() {
     const today = new Date();
     const end = new Date(today); end.setDate(end.getDate() + DEFAULT_HORIZON_DAYS - 1);
@@ -205,6 +214,7 @@
       if (id !== inflight) return; // a newer request superseded this one
       renderTable(data.days);
       renderChart(data.days);
+      renderHolidayBanner(data.holiday_coverage);
       const total = data.days.reduce((a, d) => a + d.predicted_calls, 0);
       statusEl.textContent = `${data.days.length} days · ${total.toFixed(0)} predicted calls · efficiency ${data.params.efficiency} · target ${data.params.target_pct}`;
     } catch (err) {
@@ -213,6 +223,12 @@
       rowsEl.innerHTML = `<tr><td colspan="4" style="color:var(--red);text-align:left">${err.message}</td></tr>`;
       chartEl.innerHTML = "";
     }
+  }
+
+  function renderHolidayBanner(coverage) {
+    const message = coverage && coverage.message;
+    holidayBannerEl.hidden = !message;
+    holidayBannerEl.textContent = message || "";
   }
 
   async function loadModelBanner() {

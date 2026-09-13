@@ -32,6 +32,8 @@ try:
 except ImportError:
     sys.exit("psycopg is required:  pip install 'psycopg[binary]'")
 
+from db.features import load_holidays  # noqa: E402
+from db.forecast import holiday_coverage  # noqa: E402
 from db.staffing import (  # noqa: E402
     DEFAULT_EFFICIENCY,
     DEFAULT_TARGET_PCT,
@@ -45,7 +47,8 @@ log = logging.getLogger("v4w.api")
 
 DEFAULT_HORIZON_DAYS = 30
 MAX_RANGE_DAYS = 366
-WEB_DIR = Path("web")
+REPO_ROOT = Path(__file__).resolve().parent.parent
+WEB_DIR = REPO_ROOT / "web"
 
 app = FastAPI(title="Vets4Warriors staffing forecast", version="0.1.0")
 
@@ -82,10 +85,13 @@ def _connection():
         raise HTTPException(503, f"database connection failed: {exc}") from exc
 
 
-def _hourly_staffing(start: date, end: date, efficiency: float, target_pct: float) -> pd.DataFrame:
+def _hourly_staffing(start: date, end: date, efficiency: float, target_pct: float) -> tuple[pd.DataFrame, dict]:
+    """Hourly staffing frame plus the holiday-coverage status for this range."""
     try:
         with _connection() as conn:
-            return staff_for_range(conn, start, end, efficiency, target_pct)
+            hourly = staff_for_range(conn, start, end, efficiency, target_pct)
+            coverage = holiday_coverage(load_holidays(conn), end)
+            return hourly, coverage
     except FileNotFoundError as exc:
         raise HTTPException(503, str(exc)) from exc
     except ValueError as exc:
@@ -137,10 +143,11 @@ def api_forecast(
     target_pct: float = Query(DEFAULT_TARGET_PCT, gt=0, lt=1),
 ):
     start, end = _validate_range(start, end)
-    hourly = _hourly_staffing(start, end, efficiency, target_pct)
+    hourly, coverage = _hourly_staffing(start, end, efficiency, target_pct)
     return {
         "params": {"start": str(start), "end": str(end),
                    "efficiency": efficiency, "target_pct": target_pct},
+        "holiday_coverage": coverage,
         "rows": _records(hourly),
     }
 
@@ -153,11 +160,12 @@ def api_staffing(
     target_pct: float = Query(DEFAULT_TARGET_PCT, gt=0, lt=1),
 ):
     start, end = _validate_range(start, end)
-    hourly = _hourly_staffing(start, end, efficiency, target_pct)
+    hourly, coverage = _hourly_staffing(start, end, efficiency, target_pct)
     shifts = rollup_shifts(hourly)
     return {
         "params": {"start": str(start), "end": str(end),
                    "efficiency": efficiency, "target_pct": target_pct},
+        "holiday_coverage": coverage,
         "days": _days_with_shifts(shifts),
     }
 

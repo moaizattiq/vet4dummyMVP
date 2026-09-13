@@ -63,7 +63,10 @@ LGBM_PARAMS = {
 }
 NUM_BOOST_ROUNDS = 500
 
-MODEL_DIR = Path("models")
+# Anchored on this file, not the process cwd, so `python -m db.train` and the
+# API find the same models/ from any working directory.
+REPO_ROOT = Path(__file__).resolve().parent.parent
+MODEL_DIR = REPO_ROOT / "models"
 MODEL_PATH = MODEL_DIR / "volume_lgbm.txt"
 METADATA_PATH = MODEL_DIR / "metadata.json"
 

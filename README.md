@@ -47,11 +47,21 @@ tests/           pytest; the feature tests hit the real database
 
 ## Setup
 
-Python 3.12. No package manifest yet; install directly:
+Python 3.12. Versions are pinned in `requirements.txt`.
+
+macOS first: LightGBM's wheel links against OpenMP, which is not bundled.
+Without it `import lightgbm` fails with a `libomp.dylib` error and every
+`make` target dies.
+
+```
+brew install libomp
+```
+
+Then:
 
 ```
 python3 -m venv .venv && source .venv/bin/activate
-pip install "psycopg[binary]" python-dotenv pandas numpy lightgbm fastapi uvicorn pytest
+pip install -r requirements.txt
 ```
 
 Create `.env` in the repo root. It is gitignored and must never be committed:

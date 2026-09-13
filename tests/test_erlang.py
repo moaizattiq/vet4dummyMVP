@@ -69,9 +69,11 @@ def test_erlang_c_in_unit_interval(agents, load):
 
 
 def test_required_agents_known_case():
-    # Arrange: 30 calls/hr, 10-minute AHT, 80% within 30 s
+    # Arrange: 30 calls/hr, 10-minute AHT, 80% within 30 s -> load 5.0 erlangs.
+    # Service level by agent count under the stated formula:
+    #   N=6 -> 0.441, N=7 -> 0.707, N=8 -> 0.856. First >= 0.80 is 8.
     # Act
     agents = required_agents(30, 600, 0.80, 30)
 
     # Assert
-    assert agents == 6
+    assert agents == 8
