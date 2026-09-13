@@ -1,0 +1,19 @@
+# Secrets. The database URL contains the password. Never commit it.
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Server logs
+*.log
