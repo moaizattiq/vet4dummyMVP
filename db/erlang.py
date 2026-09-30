@@ -102,3 +102,141 @@ def required_agents(
         f"no staffing level up to {MAX_AGENTS} agents reaches "
         f"{target_pct:.0%} within {target_sec}s for load {load:.2f} erlangs"
     )
+
+
+def _erlang_a_stationary(
+    calls_per_hour: float,
+    aht_sec: float,
+    agents: int,
+    patience_sec: float,
+) -> list[float]:
+    """Stationary state probabilities for an M/M/N+M (Erlang A) queue."""
+    if calls_per_hour <= 0:
+        return [1.0]
+    arrival = calls_per_hour / 3600.0
+    service = 1.0 / aht_sec
+    abandon = 1.0 / patience_sec
+    weights = [1.0]
+    total = 1.0
+    small_tail = 0
+    for state in range(1, 10000):
+        departure = min(state, agents) * service + max(state - agents, 0) * abandon
+        weight = weights[-1] * arrival / departure
+        weights.append(weight)
+        total += weight
+        ratio = arrival / departure
+        if state > agents and ratio < 1.0 and weight < total * 1e-14:
+            small_tail += 1
+            if small_tail >= 8:
+                break
+        else:
+            small_tail = 0
+    return [weight / total for weight in weights]
+
+
+def _erlang_a_answer_within(
+    queue_ahead: int,
+    agents: int,
+    aht_sec: float,
+    patience_sec: float,
+    target_sec: float,
+) -> float:
+    """Probability a queued arrival is answered within the target.
+
+    Uniformization evaluates the small phase-type chain for the arriving
+    caller's position. Abandonment by callers ahead moves the caller forward;
+    their own abandonment is an absorbing failure.
+    """
+    service_rate = agents / aht_sec
+    abandon_rate = 1.0 / patience_sec
+    uniform_rate = service_rate + (queue_ahead + 1) * abandon_rate
+    x = uniform_rate * target_sec
+    transient = [0.0] * (queue_ahead + 1)
+    transient[queue_ahead] = 1.0
+    answered = 0.0
+    poisson = math.exp(-x)
+    result = poisson * answered
+    cumulative_poisson = poisson
+
+    for step in range(1, 10000):
+        nxt = [0.0] * len(transient)
+        answered_next = answered
+        for position, probability in enumerate(transient):
+            if probability == 0.0:
+                continue
+            total_rate = service_rate + (position + 1) * abandon_rate
+            nxt[position] += probability * (1.0 - total_rate / uniform_rate)
+            if position == 0:
+                answered_next += probability * service_rate / uniform_rate
+            else:
+                nxt[position - 1] += probability * (
+                    service_rate + position * abandon_rate
+                ) / uniform_rate
+        transient = nxt
+        answered = answered_next
+        poisson *= x / step
+        cumulative_poisson += poisson
+        result += poisson * answered
+        if 1.0 - cumulative_poisson < 1e-13:
+            break
+    return min(1.0, max(0.0, result))
+
+
+def erlang_a_metrics(
+    calls_per_hour: float,
+    aht_sec: float,
+    agents: int,
+    patience_sec: float,
+    target_sec: float = 30,
+) -> dict:
+    """Service level and abandonment probability for an Erlang A queue."""
+    if calls_per_hour < 0:
+        raise ValueError(f"calls_per_hour must be >= 0, got {calls_per_hour}")
+    if aht_sec <= 0 or patience_sec <= 0:
+        raise ValueError("aht_sec and patience_sec must be > 0")
+    if agents <= 0:
+        return {"service_level": 0.0, "abandonment_probability": 1.0 if calls_per_hour else 0.0}
+    if calls_per_hour == 0:
+        return {"service_level": 1.0, "abandonment_probability": 0.0}
+
+    probabilities = _erlang_a_stationary(calls_per_hour, aht_sec, agents, patience_sec)
+    service_level = 0.0
+    expected_queue = 0.0
+    for state, probability in enumerate(probabilities):
+        if state < agents:
+            service_level += probability
+        else:
+            queue_ahead = state - agents
+            service_level += probability * _erlang_a_answer_within(
+                queue_ahead, agents, aht_sec, patience_sec, target_sec
+            )
+        expected_queue += max(state - agents, 0) * probability
+
+    arrival_rate = calls_per_hour / 3600.0
+    abandonment_probability = (expected_queue / patience_sec) / arrival_rate
+    return {
+        "service_level": min(1.0, max(0.0, service_level)),
+        "abandonment_probability": min(1.0, max(0.0, abandonment_probability)),
+    }
+
+
+def required_agents_a(
+    calls_per_hour: float,
+    aht_sec: float,
+    patience_sec: float,
+    target_pct: float = 0.80,
+    target_sec: float = 30,
+) -> int:
+    """Smallest agent count meeting the target in an Erlang A queue."""
+    if calls_per_hour == 0:
+        return 0
+    for agents in range(1, MAX_AGENTS + 1):
+        metrics = erlang_a_metrics(
+            calls_per_hour, aht_sec, agents, patience_sec, target_sec
+        )
+        if metrics["service_level"] >= target_pct:
+            return agents
+    raise ValueError(
+        f"no staffing level up to {MAX_AGENTS} agents reaches "
+        f"{target_pct:.0%} within {target_sec}s"
+    )

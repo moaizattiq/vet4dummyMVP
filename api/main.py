@@ -19,6 +19,7 @@ import os
 import sys
 from datetime import date, timedelta
 from pathlib import Path
+from typing import Literal
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -36,6 +37,7 @@ from db.features import load_holidays  # noqa: E402
 from db.forecast import holiday_coverage  # noqa: E402
 from db.staffing import (  # noqa: E402
     DEFAULT_EFFICIENCY,
+    DEFAULT_QUEUE_MODEL,
     DEFAULT_TARGET_PCT,
     SHIFT_ORDER,
     rollup_shifts,
@@ -85,13 +87,42 @@ def _connection():
         raise HTTPException(503, f"database connection failed: {exc}") from exc
 
 
-def _hourly_staffing(start: date, end: date, efficiency: float, target_pct: float) -> tuple[pd.DataFrame, dict]:
+def _patience_basis(conn) -> dict:
+    """Exponential-patience MLE: total queue exposure / abandonments."""
+    with conn.cursor() as cur:
+        cur.execute("""
+            select count(*) filter (where abandoned is true),
+                   sum(coalesce(inqueue_sec, 0))::float
+            from calls
+        """)
+        abandoned_calls, queue_exposure_sec = cur.fetchone()
+    estimated = queue_exposure_sec / abandoned_calls if abandoned_calls else None
+    return {
+        "abandoned_calls": int(abandoned_calls),
+        "queue_exposure_sec": float(queue_exposure_sec),
+        "estimated_mean_patience_sec": float(estimated) if estimated else None,
+    }
+
+
+def _hourly_staffing(
+    start: date,
+    end: date,
+    efficiency: float,
+    target_pct: float,
+    queue_model: str,
+    patience_sec: float | None,
+) -> tuple[pd.DataFrame, dict, dict, float]:
     """Hourly staffing frame plus the holiday-coverage status for this range."""
     try:
         with _connection() as conn:
-            hourly = staff_for_range(conn, start, end, efficiency, target_pct)
+            patience_basis = _patience_basis(conn)
+            selected_patience = patience_sec or patience_basis["estimated_mean_patience_sec"]
+            hourly = staff_for_range(
+                conn, start, end, efficiency, target_pct,
+                queue_model=queue_model, patience_sec=selected_patience,
+            )
             coverage = holiday_coverage(load_holidays(conn), end)
-            return hourly, coverage
+            return hourly, coverage, patience_basis, selected_patience
     except FileNotFoundError as exc:
         raise HTTPException(503, str(exc)) from exc
     except ValueError as exc:
@@ -141,12 +172,18 @@ def api_forecast(
     end: date | None = None,
     efficiency: float = Query(DEFAULT_EFFICIENCY, gt=0, le=1),
     target_pct: float = Query(DEFAULT_TARGET_PCT, gt=0, lt=1),
+    queue_model: Literal["a", "c"] = DEFAULT_QUEUE_MODEL,
+    patience_sec: float | None = Query(None, gt=0),
 ):
     start, end = _validate_range(start, end)
-    hourly, coverage = _hourly_staffing(start, end, efficiency, target_pct)
+    hourly, coverage, patience_basis, selected_patience = _hourly_staffing(
+        start, end, efficiency, target_pct, queue_model, patience_sec
+    )
     return {
         "params": {"start": str(start), "end": str(end),
-                   "efficiency": efficiency, "target_pct": target_pct},
+                   "efficiency": efficiency, "target_pct": target_pct,
+                   "queue_model": queue_model, "patience_sec": selected_patience},
+        "patience_basis": patience_basis,
         "holiday_coverage": coverage,
         "rows": _records(hourly),
     }
@@ -158,13 +195,19 @@ def api_staffing(
     end: date | None = None,
     efficiency: float = Query(DEFAULT_EFFICIENCY, gt=0, le=1),
     target_pct: float = Query(DEFAULT_TARGET_PCT, gt=0, lt=1),
+    queue_model: Literal["a", "c"] = DEFAULT_QUEUE_MODEL,
+    patience_sec: float | None = Query(None, gt=0),
 ):
     start, end = _validate_range(start, end)
-    hourly, coverage = _hourly_staffing(start, end, efficiency, target_pct)
+    hourly, coverage, patience_basis, selected_patience = _hourly_staffing(
+        start, end, efficiency, target_pct, queue_model, patience_sec
+    )
     shifts = rollup_shifts(hourly)
     return {
         "params": {"start": str(start), "end": str(end),
-                   "efficiency": efficiency, "target_pct": target_pct},
+                   "efficiency": efficiency, "target_pct": target_pct,
+                   "queue_model": queue_model, "patience_sec": selected_patience},
+        "patience_basis": patience_basis,
         "holiday_coverage": coverage,
         "days": _days_with_shifts(shifts),
     }

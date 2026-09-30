@@ -28,12 +28,14 @@ import math
 
 import pandas as pd
 
-from db.erlang import erlang_c, required_agents
+from db.erlang import erlang_a_metrics, erlang_c, required_agents, required_agents_a
 from db.forecast import forecast_range
 
 DEFAULT_EFFICIENCY = 0.65
 DEFAULT_TARGET_PCT = 0.80
 DEFAULT_TARGET_SEC = 30
+DEFAULT_PATIENCE_SEC = 400
+DEFAULT_QUEUE_MODEL = "a"
 MAX_STAFF_PER_SHIFT = 7
 SECONDS_PER_HOUR = 3600
 
@@ -68,6 +70,8 @@ def staff_for_hour(
     efficiency: float = DEFAULT_EFFICIENCY,
     target_pct: float = DEFAULT_TARGET_PCT,
     target_sec: float = DEFAULT_TARGET_SEC,
+    queue_model: str = "c",
+    patience_sec: float = DEFAULT_PATIENCE_SEC,
 ) -> dict:
     """Agents needed on inbound, people to schedule to get that many after
     efficiency loss, and the service level those scheduled people deliver."""
@@ -77,18 +81,38 @@ def staff_for_hour(
         raise ValueError(f"predicted_offered must be >= 0, got {predicted_offered}")
 
     load = predicted_offered * aht_sec / SECONDS_PER_HOUR
-    agents = required_agents(predicted_offered, aht_sec, target_pct, target_sec)
+    if queue_model not in {"a", "c"}:
+        raise ValueError(f"queue_model must be 'a' or 'c', got {queue_model!r}")
+    if patience_sec <= 0:
+        raise ValueError(f"patience_sec must be > 0, got {patience_sec}")
+
+    if queue_model == "a":
+        agents = required_agents_a(
+            predicted_offered, aht_sec, patience_sec, target_pct, target_sec
+        )
+    else:
+        agents = required_agents(predicted_offered, aht_sec, target_pct, target_sec)
     scheduled = math.ceil(agents / efficiency)
 
     # Of `scheduled` people, only efficiency * scheduled are on inbound.
     effective_agents = math.floor(scheduled * efficiency)
-    service_level = _service_level(effective_agents, load, aht_sec, target_sec)
+    if queue_model == "a":
+        metrics = erlang_a_metrics(
+            predicted_offered, aht_sec, effective_agents, patience_sec, target_sec
+        )
+        service_level = metrics["service_level"]
+        abandonment_probability = metrics["abandonment_probability"]
+    else:
+        service_level = _service_level(effective_agents, load, aht_sec, target_sec)
+        abandonment_probability = 0.0
 
     return {
         "offered_load_erlangs": load,
         "agents_required": agents,
         "scheduled_needed": scheduled,
         "service_level_at_scheduled": service_level,
+        "abandonment_probability": abandonment_probability,
+        "expected_abandoned": predicted_offered * abandonment_probability,
         "capped": scheduled > MAX_STAFF_PER_SHIFT,
     }
 
@@ -103,11 +127,20 @@ def staff_for_range(
     end_date,
     efficiency: float = DEFAULT_EFFICIENCY,
     target_pct: float = DEFAULT_TARGET_PCT,
+    queue_model: str = "c",
+    patience_sec: float = DEFAULT_PATIENCE_SEC,
 ) -> pd.DataFrame:
     """Forecast every hour in the range and attach staffing numbers."""
     forecast = forecast_range(conn, start_date, end_date)
     staffing = pd.DataFrame([
-        staff_for_hour(row.predicted_offered, row.predicted_aht_sec, efficiency, target_pct)
+        staff_for_hour(
+            row.predicted_offered,
+            row.predicted_aht_sec,
+            efficiency,
+            target_pct,
+            queue_model=queue_model,
+            patience_sec=patience_sec,
+        )
         for row in forecast.itertuples(index=False)
     ])
     return pd.concat([forecast, staffing], axis=1)

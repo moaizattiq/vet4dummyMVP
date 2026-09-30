@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import json
 import sys
+import threading
 import warnings
 from datetime import date
 
@@ -47,6 +48,7 @@ LAST_HOUR_OF_DAY = 23
 # Process-wide cache. Replaced wholesale (never mutated in place) when the
 # model file's mtime changes.
 _cache: dict = {"mtime": None, "booster": None, "metadata": None, "aht": None}
+_cache_lock = threading.Lock()
 
 # The holiday-coverage warning goes to stderr once per process; every
 # request still gets it as a field via holiday_coverage().
@@ -79,13 +81,18 @@ def _load_cached(conn) -> tuple[lgb.Booster, dict, dict]:
         )
 
     mtime = MODEL_PATH.stat().st_mtime
-    if _cache["mtime"] != mtime:
-        _cache = {
-            "mtime": mtime,
-            "booster": lgb.Booster(model_file=str(MODEL_PATH)),
-            "metadata": _read_metadata(),
-            "aht": estimate_aht(conn),
-        }
+    with _cache_lock:
+        if _cache["mtime"] != mtime:
+            _cache = {
+                "mtime": mtime,
+                # Git may check this text model out with CRLF on Windows,
+                # while LightGBM's model parser expects LF separators.
+                "booster": lgb.Booster(
+                    model_str=MODEL_PATH.read_text().replace("\r\n", "\n")
+                ),
+                "metadata": _read_metadata(),
+                "aht": estimate_aht(conn),
+            }
     return _cache["booster"], _cache["metadata"], _cache["aht"]
 
 
