@@ -88,6 +88,49 @@ make serve        # http://127.0.0.1:8000
 
 `make` targets use `python3`; pass `PYTHON=.venv/bin/python` to override.
 
+## Docker
+
+The production image listens on port 8000 and requires the database URL at
+runtime. On Windows, run the complete build, startup, log, HTTP, and cleanup
+check with:
+
+```powershell
+powershell -File scripts/verify-container.ps1
+```
+
+The equivalent manual commands are:
+
+```powershell
+docker build -t app-test .
+docker run -d --env-file .env -p 8000:8000 --name test-container app-test
+docker logs test-container
+curl.exe -I http://localhost:8000
+docker rm -f test-container
+```
+
+The script always removes `test-container` after a successful start, including
+when the log or HTTP checks fail.
+
+### Container verification status (2026-10-05)
+
+Automated image and container verification is currently blocked by the Windows
+host runtime, not by an observed application error. Docker Desktop 4.48.0
+crashes before its Linux engine becomes available while managing the local
+`dockerInference` and `docker-secrets-engine\engine.sock` sockets. Consequently,
+`docker build` cannot connect to `dockerDesktopLinuxEngine`, and no test image
+or container is created.
+
+As a fallback, the Docker image's production entry point was run directly from
+the repository on port 8000. Uvicorn started and stopped cleanly, with no
+startup exception, and these requests all returned `200 OK`:
+
+- `GET /`
+- `GET /api/model`
+- `GET /api/staffing`
+
+Rerun `scripts/verify-container.ps1` after Docker Desktop is repaired or
+updated to complete the image-level verification.
+
 ## Environment variables
 
 | Name | Required | Meaning |

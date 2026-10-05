@@ -1,0 +1,45 @@
+# Version-control and local development metadata
+.git
+.gitignore
+.agents
+.claude
+.vscode
+.idea
+
+# Secrets and local environment files (retain the safe example file only if
+# it is ever explicitly copied by a future Dockerfile).
+.env
+.env.*
+!.env.example
+
+# Python caches, virtual environments, coverage, and test artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+pytest-cache-files-*/
+.venv/
+venv/
+.coverage
+htmlcov/
+
+# Files not required by the production API image
+tests/
+docs/
+reviews/
+DESIGN.md
+README.md
+Makefile
+index.html
+
+# Editor, OS, logs, and temporary files
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.swp
+
+# Docker metadata does not need to be sent back into COPY instructions
+Dockerfile*
+docker-compose*.yml
+.dockerignore
